@@ -1,0 +1,31 @@
+
+use datn
+DELETE FROM ChiTietDonHang;
+DELETE FROM DonHang;
+DELETE FROM GioHangChiTiet;
+DELETE FROM GioHang;
+DELETE FROM FeedBack;
+DELETE FROM IMEI;
+DELETE FROM ThuocTinh;
+DELETE FROM BienTheSanPham;
+
+
+DELETE FROM SanPham;
+
+DELETE FROM ThuocTinhPhuKien;
+DELETE FROM BienThePhuKien;
+DELETE FROM PhuKien;
+DELETE FROM DanhMucPhuKien;
+
+DELETE FROM DanhMuc;
+
+DELETE FROM ThongSoKyThuat;
+DELETE FROM LoaiThongSo;
+DELETE FROM KhuyenMai;
+DELETE FROM UserVoucher;
+DELETE FROM Voucher;
+DELETE FROM Messages;
+
+DELETE FROM Users;
+
+DELETE FROM roles;

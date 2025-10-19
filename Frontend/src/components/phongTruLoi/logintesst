@@ -1,0 +1,96 @@
+
+<template>
+  <div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card shadow p-4" style="width: 400px;">
+      <h3 class="text-center mb-3">Đăng nhập</h3>
+
+      <!-- Form login thường -->
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input v-model="form.username" type="text" class="form-control" placeholder="Nhập username" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input v-model="form.passwords" type="password" class="form-control" placeholder="Nhập mật khẩu" />
+      </div>
+      <button class="btn btn-primary w-100" @click="login">Đăng nhập</button>
+      <p v-if="error" class="text-danger mt-2">{{ error }}</p>
+
+      <!-- Login bằng Google -->
+      <div class="text-center mt-3">
+        <button class="btn btn-danger w-100" @click="loginWithGoogle">
+          <i class="bi bi-google"></i> Đăng nhập với Google
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import axios from "axios";
+
+export default {
+  name: "Login",
+  data() {
+    return {
+      form: {
+        username: "",
+        passwords: ""
+      },
+      error: null
+    };
+  },
+  methods: {
+    async login() {
+      try {
+        const res = await axios.post("http://localhost:8081/api/auth/login", this.form);
+
+        // ✅ Lưu token & thông tin user vào localStorage
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("role", res.data.role);
+        localStorage.setItem("username", res.data.username);
+        localStorage.setItem("tenHienThi", res.data.tenHienThi || "");
+        localStorage.setItem("hoTen", res.data.hoTen || "");
+
+        // Chuyển hướng sang Trang chủ
+        this.$router.push("/");
+      } catch (err) {
+        console.error("❌ Lỗi login:", err);
+        this.error = "Sai username hoặc password!";
+      }
+    },
+
+    // Login Google
+    loginWithGoogle() {
+      window.location.href = "http://localhost:8081/oauth2/authorization/google";
+    }
+  },
+  mounted() {
+    // ✅ Khi Google redirect về, bắt token từ URL
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    const role = params.get("role");
+    const username = params.get("username");
+    const tenHienThi = params.get("tenHienThi");
+    const hoTen = params.get("hoTen");
+
+    if (token) {
+      localStorage.setItem("token", token);
+      if (role) localStorage.setItem("role", role);
+      if (username) localStorage.setItem("username", username);
+      if (tenHienThi) localStorage.setItem("tenHienThi", decodeURIComponent(tenHienThi));
+      if (hoTen) localStorage.setItem("hoTen", decodeURIComponent(hoTen));
+
+      console.log("✅ Đăng nhập Google thành công:", {
+        token, role, username, tenHienThi, hoTen
+      });
+
+      // Xóa query string trên URL cho đẹp
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      this.$router.push("/");
+    }
+  }
+};
+</script>
+-->
