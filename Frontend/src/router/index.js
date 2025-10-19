@@ -1,31 +1,22 @@
 import { createRouter, createWebHistory } from "vue-router";
-import TrangChu from "../components/TrangChu.vue";
-import SanPhamChiTiet from "../components/SanPhamChiTiet.vue";
-import Login from "../components/Login.vue";
-import Users from "../components/Users.vue";
-import Me from "../components/Me.vue";
+import TrangChu from "@/views/user/TrangChu.vue";
+import SanPhamChiTiet from "@/views/user/SanPhamChiTiet.vue";
+import Login from "@/views/user/Login.vue";
+import Users from "@/views/user/Users.vue";
+import Me from "@/views/user/Me.vue";
+import GioHang from "@/views/user/GioHang.vue";
+import XacNhanDonHang from "@/views/user/XacNhanDonHang.vue";
+import DonHang from "@/views/user/DonHang.vue";
+import ChiTietPhuKien from '@/views/user/ChiTietPhuKien.vue';
+import TrangChuPhuKien from '@/views/user/TrangChuPhuKien.vue';
+import DanhMucDienThoai from "@/views/user/DanhMucDienThoai.vue";
+import SearchSanPham from "@/views/user/SearchSanPham.vue";
+import Voucher from "@/views/user/Voucher.vue";
+// Import admin router
+import AdminRouter from '@/router/modules/admin';
 
 
-
-import GioHang from "../components/GioHang.vue";
-
-
-
-
-import XacNhanDonHang from "../components/XacNhanDonHang.vue";
-
-import DonHang from "../components/DonHang.vue";
-
-import ChiTietPhuKien from '../components/ChiTietPhuKien.vue';
-import TrangChuPhuKien from '../components/TrangChuPhuKien.vue';
-
-import DanhMucDienThoai from "../components/DanhMucDienThoai.vue";
-import SearchSanPham from "@/components/SearchSanPham.vue";
-import Voucher from "@/components/Voucher.vue";
-// Import admin & client router riêng
-import AdminRouter from '@/admin/router/admin';
-
-
+// Chỉ chỉnh sửa file này khi cần , sử dụng @ không được ../ rất dễ lẫn
 
 const routes = [
   {
