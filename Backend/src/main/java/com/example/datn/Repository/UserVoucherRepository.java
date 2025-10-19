@@ -16,5 +16,7 @@ public interface UserVoucherRepository extends JpaRepository<UserVoucher, Intege
     List<UserVoucher> findByUserIdAndTrangThaiIn(Integer userId, Collection<Integer> trangThais);
 
     boolean existsByUserIdAndVoucherId(Integer userId, Integer voucherId);
+    
+    List<UserVoucher> findByUserIdAndVoucherId(Integer userId, Integer voucherId);
 }
 

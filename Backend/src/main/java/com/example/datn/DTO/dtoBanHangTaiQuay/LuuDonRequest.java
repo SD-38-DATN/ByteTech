@@ -23,4 +23,8 @@ public class LuuDonRequest {
     private String ghiChu;
     private Integer userVoucherId;
     private List<ChiTietDonHangBanHangTaiQuayDTO> chiTietDonHangs;
+    
+    // ✅ THÊM: Các trường mới để xử lý số lượng
+    private Boolean updateProductQuantities; // Có trừ số lượng sản phẩm/phụ kiện không
+    private Boolean updateVoucherQuantities; // Có trừ số lượng voucher không
 }

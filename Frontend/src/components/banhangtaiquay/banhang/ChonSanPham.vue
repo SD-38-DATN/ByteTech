@@ -265,8 +265,38 @@ async function handleSearchSKU() {
     const oldData = await searchProductBySKU(sku);
     console.log("🔍 Frontend: Response từ API cũ:", oldData);
     
+    // ✅ DEBUG: Kiểm tra cấu trúc dữ liệu từ API cũ
+    if (oldData && oldData.length > 0) {
+      console.log("🔍 Frontend: Cấu trúc sản phẩm từ API cũ:", {
+        tenSanPham: oldData[0].tenSanPham,
+        tenPhuKien: oldData[0].tenPhuKien,
+        maSKU: oldData[0].maSKU,
+        maSKUPhuKien: oldData[0].maSKUPhuKien,
+        gia: oldData[0].gia,
+        giaPhuKien: oldData[0].giaPhuKien,
+        thuocTinh: oldData[0].thuocTinh,
+        thuocTinhPhuKien: oldData[0].thuocTinhPhuKien,
+        keys: Object.keys(oldData[0])
+      });
+    }
+    
     const data = await searchProductBySKUOnly(sku);
     console.log("🔍 Frontend: Response từ API searchProductBySKUOnly:", data);
+    
+    // ✅ DEBUG: Kiểm tra cấu trúc dữ liệu từ API mới
+    if (data && data.length > 0) {
+      console.log("🔍 Frontend: Cấu trúc sản phẩm từ API mới:", {
+        tenSanPham: data[0].tenSanPham,
+        tenPhuKien: data[0].tenPhuKien,
+        maSKU: data[0].maSKU,
+        maSKUPhuKien: data[0].maSKUPhuKien,
+        gia: data[0].gia,
+        giaPhuKien: data[0].giaPhuKien,
+        thuocTinh: data[0].thuocTinh,
+        thuocTinhPhuKien: data[0].thuocTinhPhuKien,
+        keys: Object.keys(data[0])
+      });
+    }
 
     if (data && data.length > 0) {
       searchResults.value = data;

@@ -41,6 +41,23 @@ export function useGioHangBanHangTaiQuay() {
       "IMEIs:",
       imeiList
     );
+    
+    // ✅ DEBUG: Kiểm tra cấu trúc dữ liệu sản phẩm chi tiết
+    console.log("🔍 DEBUG: Cấu trúc sản phẩm chi tiết:", {
+      tenSanPham: sanPham.tenSanPham,
+      tenPhuKien: sanPham.tenPhuKien,
+      maSKU: sanPham.maSKU,
+      maSKUPhuKien: sanPham.maSKUPhuKien,
+      gia: sanPham.gia,
+      giaPhuKien: sanPham.giaPhuKien,
+      thuocTinh: sanPham.thuocTinh,
+      thuocTinhPhuKien: sanPham.thuocTinhPhuKien,
+      loai: sanPham.loai,
+      keys: Object.keys(sanPham)
+    });
+    
+    // ✅ DEBUG: Log toàn bộ object để xem cấu trúc thực tế
+    console.log("🔍 DEBUG: Toàn bộ object sản phẩm:", JSON.stringify(sanPham, null, 2));
     console.log("🔍 Frontend: Chi tiết imeiList:", {
       isArray: Array.isArray(imeiList),
       length: imeiList ? imeiList.length : "null/undefined",
@@ -130,6 +147,61 @@ export function useGioHangBanHangTaiQuay() {
         itemMoi.maSKU = sanPham.maSKUPhuKien;
       }
 
+      // ✅ SỬA LỖI: Xử lý thuộc tính cho phụ kiện - kiểm tra cấu trúc lồng nhau
+      if (sanPham.sanPham && sanPham.sanPham.thuocTinh) {
+        itemMoi.thuocTinh = sanPham.sanPham.thuocTinh;
+        console.log("✅ Thêm sản phẩm: Sử dụng thuộc tính từ sanPham.sanPham.thuocTinh:", sanPham.sanPham.thuocTinh);
+      } else if (sanPham.thuocTinhPhuKien) {
+        itemMoi.thuocTinh = sanPham.thuocTinhPhuKien;
+        console.log("✅ Thêm sản phẩm: Sử dụng thuộc tính từ thuocTinhPhuKien:", sanPham.thuocTinhPhuKien);
+      } else if (sanPham.thuocTinh) {
+        itemMoi.thuocTinh = sanPham.thuocTinh;
+        console.log("✅ Thêm sản phẩm: Sử dụng thuộc tính từ thuocTinh:", sanPham.thuocTinh);
+      } else if (sanPham.thuocTinhSanPham) {
+        itemMoi.thuocTinh = sanPham.thuocTinhSanPham;
+        console.log("✅ Thêm sản phẩm: Sử dụng thuộc tính từ thuocTinhSanPham:", sanPham.thuocTinhSanPham);
+      } else if (!itemMoi.thuocTinh) {
+        // Nếu không có thuộc tính, đặt giá trị mặc định
+        itemMoi.thuocTinh = 'N/A';
+        console.log("✅ Thêm sản phẩm: Đặt thuộc tính mặc định: N/A");
+      }
+
+      // ✅ SỬA LỖI: Xử lý giá cho phụ kiện - kiểm tra cấu trúc lồng nhau
+      if (sanPham.sanPham && sanPham.sanPham.gia) {
+        itemMoi.gia = sanPham.sanPham.gia;
+        console.log("✅ Thêm sản phẩm: Sử dụng giá từ sanPham.sanPham.gia:", sanPham.sanPham.gia);
+      } else if (sanPham.giaPhuKien) {
+        itemMoi.gia = sanPham.giaPhuKien;
+        console.log("✅ Thêm sản phẩm: Sử dụng giá từ giaPhuKien:", sanPham.giaPhuKien);
+      } else if (sanPham.gia) {
+        itemMoi.gia = sanPham.gia;
+        console.log("✅ Thêm sản phẩm: Sử dụng giá từ gia:", sanPham.gia);
+      } else if (sanPham.giaSanPham) {
+        itemMoi.gia = sanPham.giaSanPham;
+        console.log("✅ Thêm sản phẩm: Sử dụng giá từ giaSanPham:", sanPham.giaSanPham);
+      }
+
+      // ✅ SỬA LỖI: Đảm bảo giá không bị null/undefined
+      if (!itemMoi.gia || isNaN(itemMoi.gia)) {
+        itemMoi.gia = 0;
+        console.warn("⚠️ Giá sản phẩm không hợp lệ, đặt về 0:", itemMoi.tenSanPham);
+      }
+
+      // ✅ SỬA LỖI: Cập nhật lại thành tiền với giá đã sửa
+      itemMoi.thanhTien = itemMoi.gia * itemMoi.soLuongMua;
+
+      // ✅ SỬA LỖI: Xử lý loại sản phẩm cho phụ kiện
+      if (sanPham.maSKUPhuKien && !sanPham.maSKU) {
+        itemMoi.loai = 'Phụ kiện';
+        console.log("✅ Thêm sản phẩm: Xác định loại dựa trên maSKUPhuKien: Phụ kiện");
+      } else if (itemMoi.maSKU && (itemMoi.maSKU.includes('PK-') || itemMoi.maSKU.includes('ANK-'))) {
+        itemMoi.loai = 'Phụ kiện';
+        console.log("✅ Thêm sản phẩm: Xác định loại dựa trên pattern SKU: Phụ kiện");
+      } else {
+        itemMoi.loai = 'Sản phẩm chính';
+        console.log("✅ Thêm sản phẩm: Mặc định: Sản phẩm chính");
+      }
+
       // Cập nhật số lượng theo IMEI nếu có
       if (imeiList && Array.isArray(imeiList) && imeiList.length > 0) {
         itemMoi.soLuongMua = imeiList.length;
@@ -146,7 +218,12 @@ export function useGioHangBanHangTaiQuay() {
       console.log("✅ Đã thêm sản phẩm mới vào giỏ:", itemMoi);
       console.log("🔍 Frontend: Chi tiết itemMoi sau khi tạo:", {
         tenSanPham: itemMoi.tenSanPham,
+        maSKU: itemMoi.maSKU,
+        gia: itemMoi.gia,
+        thuocTinh: itemMoi.thuocTinh,
+        loai: itemMoi.loai,
         soLuongMua: itemMoi.soLuongMua,
+        thanhTien: itemMoi.thanhTien,
         imeiListLength: itemMoi.imeiList ? itemMoi.imeiList.length : 'undefined',
         imeiList: itemMoi.imeiList
       });
@@ -233,6 +310,17 @@ export function useGioHangBanHangTaiQuay() {
       gioHang.value.splice(index, 1);
       console.log("🗑️ Đã xóa sản phẩm:", maSKU);
       capNhatThanhTien();
+      
+      // ✅ SỬA LỖI: Đảm bảo đơn hàng được cập nhật ngay lập tức khi xóa sản phẩm
+      // Trigger event để component cha biết cần cập nhật đơn hàng
+      console.log("🔄 Trigger cập nhật đơn hàng sau khi xóa sản phẩm");
+      
+      // Dispatch custom event để thông báo cho component cha
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('cart-item-deleted', {
+          detail: { maSKU, remainingItems: gioHang.value.length }
+        }));
+      }
     }
   }
 
@@ -287,7 +375,18 @@ export function useGioHangBanHangTaiQuay() {
    */
   function capNhatThanhTien() {
     gioHang.value.forEach((item) => {
-      item.thanhTien = item.gia * item.soLuongMua;
+      // ✅ SỬA LỖI: Đảm bảo giá hợp lệ trước khi tính toán
+      const gia = item.gia || 0;
+      const soLuong = item.soLuongMua || 0;
+      
+      // Kiểm tra và sửa giá nếu cần
+      if (isNaN(gia) || gia < 0) {
+        console.warn("⚠️ Giá sản phẩm không hợp lệ, đặt về 0:", item.tenSanPham, "Giá:", gia);
+        item.gia = 0;
+        item.thanhTien = 0;
+      } else {
+        item.thanhTien = gia * soLuong;
+      }
     });
   }
 
@@ -340,6 +439,19 @@ export function useGioHangBanHangTaiQuay() {
       imeiList
     );
     
+    // ✅ DEBUG: Kiểm tra cấu trúc dữ liệu sản phẩm
+    console.log("🔍 DEBUG: Cấu trúc sản phẩm từ đơn hàng:", {
+      tenSanPham: sanPham.tenSanPham || sanPham.tenPhuKien,
+      maSKU: sanPham.maSKU || sanPham.maSKUPhuKien,
+      gia: sanPham.gia || sanPham.giaPhuKien,
+      thuocTinh: sanPham.thuocTinh || sanPham.thuocTinhPhuKien,
+      loai: sanPham.loai,
+      keys: Object.keys(sanPham)
+    });
+    
+    // ✅ DEBUG: Log toàn bộ object để xem cấu trúc thực tế
+    console.log("🔍 DEBUG: Toàn bộ object sản phẩm từ đơn hàng:", JSON.stringify(sanPham, null, 2));
+    
     // ✅ QUAN TRỌNG: Không cập nhật trạng thái IMEI khi load từ đơn hàng
     // IMEI đã được lưu với trạng thái "tạm giữ" khi đơn hàng được tạo
     // Chỉ cần load sản phẩm mà không thay đổi trạng thái IMEI
@@ -361,6 +473,79 @@ export function useGioHangBanHangTaiQuay() {
     // ✅ SỬA: Đảm bảo IMEI không bị ghi đè
     if (imeiList && imeiList.length > 0) {
       itemMoi.imeiList = [...imeiList];
+    }
+
+    // ✅ SỬA LỖI: Xử lý thuộc tính cho phụ kiện khi load từ đơn hàng - kiểm tra cấu trúc lồng nhau
+    if (sanPham.sanPham && sanPham.sanPham.thuocTinh) {
+      itemMoi.thuocTinh = sanPham.sanPham.thuocTinh;
+      console.log("✅ Load từ đơn hàng: Sử dụng thuộc tính từ sanPham.sanPham.thuocTinh:", sanPham.sanPham.thuocTinh);
+    } else if (sanPham.thuocTinhPhuKien) {
+      itemMoi.thuocTinh = sanPham.thuocTinhPhuKien;
+      console.log("✅ Load từ đơn hàng: Sử dụng thuộc tính từ thuocTinhPhuKien:", sanPham.thuocTinhPhuKien);
+    } else if (sanPham.thuocTinh) {
+      // Nếu đã có thuộc tính từ đơn hàng, sử dụng nó
+      itemMoi.thuocTinh = sanPham.thuocTinh;
+      console.log("✅ Load từ đơn hàng: Sử dụng thuộc tính từ thuocTinh:", sanPham.thuocTinh);
+    } else if (sanPham.thuocTinhSanPham) {
+      itemMoi.thuocTinh = sanPham.thuocTinhSanPham;
+      console.log("✅ Load từ đơn hàng: Sử dụng thuộc tính từ thuocTinhSanPham:", sanPham.thuocTinhSanPham);
+    } else if (!itemMoi.thuocTinh) {
+      // Nếu không có thuộc tính, đặt giá trị mặc định
+      itemMoi.thuocTinh = 'N/A';
+      console.log("✅ Load từ đơn hàng: Đặt thuộc tính mặc định: N/A");
+    }
+
+    // ✅ SỬA LỖI: Xử lý giá cho phụ kiện khi load từ đơn hàng - kiểm tra cấu trúc lồng nhau
+    if (sanPham.sanPham && sanPham.sanPham.gia) {
+      itemMoi.gia = sanPham.sanPham.gia;
+      console.log("✅ Load từ đơn hàng: Sử dụng giá từ sanPham.sanPham.gia:", sanPham.sanPham.gia);
+    } else if (sanPham.giaPhuKien) {
+      itemMoi.gia = sanPham.giaPhuKien;
+      console.log("✅ Load từ đơn hàng: Sử dụng giá từ giaPhuKien:", sanPham.giaPhuKien);
+    } else if (sanPham.gia) {
+      // Nếu đã có giá từ đơn hàng, sử dụng nó
+      itemMoi.gia = sanPham.gia;
+      console.log("✅ Load từ đơn hàng: Sử dụng giá từ gia:", sanPham.gia);
+    } else if (sanPham.giaSanPham) {
+      itemMoi.gia = sanPham.giaSanPham;
+      console.log("✅ Load từ đơn hàng: Sử dụng giá từ giaSanPham:", sanPham.giaSanPham);
+    }
+
+    // ✅ SỬA LỖI: Đảm bảo giá không bị null/undefined khi load từ đơn hàng
+    if (!itemMoi.gia || isNaN(itemMoi.gia)) {
+      itemMoi.gia = 0;
+      console.warn("⚠️ Giá sản phẩm không hợp lệ khi load từ đơn hàng, đặt về 0:", itemMoi.tenSanPham);
+    }
+
+    // ✅ SỬA LỖI: Cập nhật lại thành tiền với giá đã sửa
+    itemMoi.thanhTien = itemMoi.gia * itemMoi.soLuongMua;
+    
+    // ✅ DEBUG: Kiểm tra kết quả sau khi xử lý
+    console.log("🔍 DEBUG: Kết quả sau khi xử lý sản phẩm:", {
+      tenSanPham: itemMoi.tenSanPham,
+      maSKU: itemMoi.maSKU,
+      gia: itemMoi.gia,
+      thuocTinh: itemMoi.thuocTinh,
+      loai: itemMoi.loai,
+      thanhTien: itemMoi.thanhTien
+    });
+
+    // ✅ SỬA LỖI: Xử lý loại sản phẩm cho phụ kiện khi load từ đơn hàng
+    // Ưu tiên sử dụng thông tin loại đã được lưu trong đơn hàng
+    if (sanPham.loai) {
+      // Nếu đã có thông tin loại từ đơn hàng, sử dụng nó
+      itemMoi.loai = sanPham.loai;
+      console.log("✅ Sử dụng loại từ đơn hàng:", sanPham.loai);
+    } else if (sanPham.maSKUPhuKien && !sanPham.maSKU) {
+      itemMoi.loai = 'Phụ kiện';
+      console.log("✅ Xác định loại dựa trên maSKUPhuKien: Phụ kiện");
+    } else if (itemMoi.maSKU && (itemMoi.maSKU.includes('PK-') || itemMoi.maSKU.includes('ANK-'))) {
+      // Kiểm tra pattern mã SKU để xác định phụ kiện
+      itemMoi.loai = 'Phụ kiện';
+      console.log("✅ Xác định loại dựa trên pattern SKU: Phụ kiện");
+    } else {
+      itemMoi.loai = 'Sản phẩm chính';
+      console.log("✅ Mặc định: Sản phẩm chính");
     }
 
     // ✅ QUAN TRỌNG: THÊM sản phẩm vào giỏ hàng (không thay thế)

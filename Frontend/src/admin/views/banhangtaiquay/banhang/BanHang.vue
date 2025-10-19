@@ -127,6 +127,7 @@
         </div>
 
         <ThanhToan 
+          ref="thanhToanRef"
           @save="handleSave"
           @submit="handleSubmit"
           @print="handlePrint"
@@ -136,7 +137,7 @@
       <!-- Panel phải -->
       <div class="right-panel">
         <div class="add-product-bar">
-          <button class="btn-add-product" @click="isModalOpen = true">
+          <button class="btn-add-product" @click="moModalChonSanPham">
             ➕ Thêm sản phẩm
           </button>
         </div>
@@ -199,6 +200,9 @@ const isModalOpen = ref(false);
 const danhSachDonHang = ref([]);
 const donHangHienTaiId = ref(null);
 
+// Ref để truy cập component ThanhToan
+const thanhToanRef = ref(null);
+
 // Quản lý thông tin khách hàng
 const thongTinKhachHangHienTai = ref({
   tenKhachHang: "",
@@ -260,6 +264,20 @@ function saveToLocalStorage() {
   console.log("💾 Đã lưu đơn hàng vào localStorage");
 }
 
+// ✅ SỬA LỖI: Lắng nghe event xóa sản phẩm để cập nhật đơn hàng ngay lập tức
+function setupCartItemDeletedListener() {
+  window.addEventListener('cart-item-deleted', (event) => {
+    const { maSKU, remainingItems } = event.detail;
+    console.log("🔄 Nhận event xóa sản phẩm:", maSKU, "Còn lại:", remainingItems, "sản phẩm");
+    
+    // Cập nhật đơn hàng ngay lập tức khi xóa sản phẩm
+    if (donHangHienTaiId.value) {
+      console.log("💾 Cập nhật đơn hàng ngay lập tức sau khi xóa sản phẩm");
+      capNhatDonHangHienTai();
+    }
+  });
+}
+
 // Load đơn hàng hiện tại
 async function loadDonHangHienTai() {
   if (!donHangHienTaiId.value) return;
@@ -307,6 +325,7 @@ async function loadDonHangHienTai() {
 
 // Khởi tạo khi component mount
 initFromLocalStorage();
+setupCartItemDeletedListener();
 
 // ✅ Tự động cập nhật đơn hàng khi giỏ hàng thay đổi (với debounce)
 let watcherTimeout = null;
@@ -362,7 +381,7 @@ const formatCurrency = (amount) => {
 };
 
 // Xử lý lưu đơn
-async function handleSave() {
+async function handleSave(paymentData = {}) {
   if (gioHang.value.length === 0) {
     alert("⚠️ Giỏ hàng trống! Vui lòng thêm sản phẩm.");
     return;
@@ -388,23 +407,61 @@ async function handleSave() {
     console.log("🔍 DEBUG Available keys:", Object.keys(decoded));
     const userId = decoded.userId || decoded.id || decoded.sub;
     console.log("🔍 DEBUG Extracted userId:", userId);
+    
+    // ✅ SỬA LỖI: Nếu userId là username (admin), cần tìm ID thực tế
+    let actualUserId = userId;
+    if (typeof userId === 'string' && isNaN(parseInt(userId))) {
+      // userId là username, cần tìm ID thực tế từ database
+      console.log("🔍 DEBUG: Username được phát hiện, gọi API để lấy User ID...");
+      
+      try {
+        const response = await fetch(`http://localhost:8081/api/banhangtaiquay/thanh-toan/get-user-id?username=${encodeURIComponent(userId)}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          actualUserId = userData.userId;
+          console.log("✅ DEBUG: Đã lấy User ID từ API:", actualUserId);
+        } else {
+          console.warn("⚠️ WARNING: Không thể lấy User ID từ API, sử dụng fallback ID = 1");
+          actualUserId = 1; // Fallback
+        }
+      } catch (error) {
+        console.error("❌ ERROR: Lỗi khi gọi API lấy User ID:", error);
+        actualUserId = 1; // Fallback
+      }
+    }
 
     if (!userId) {
       alert("❌ Không thể lấy thông tin user từ token. Vui lòng đăng nhập lại!");
       return;
     }
 
+    // ✅ SỬA LỖI: Lưu đơn KHÔNG sử dụng phương thức thanh toán và voucher
+    console.log("🔍 DEBUG: Payment data từ ThanhToan.vue (LƯU ĐƠN):", paymentData);
+    
+    // ✅ THÊM LOGIC MỚI: Lưu đơn - Không trừ số lượng, không trừ voucher
+    console.log("🔍 DEBUG: Lưu đơn - Không trừ số lượng sản phẩm/phụ kiện, không trừ voucher");
+    
     // Chuẩn bị dữ liệu đơn hàng
     const orderData = {
-      userId: parseInt(userId) || 1, // Convert to Integer, fallback to 1
+      userId: parseInt(actualUserId) || 1, // Convert to Integer, fallback to 1
       maDonHang: getCurrentOrderMaDonHang(), // Gửi mã đơn hàng hiện tại nếu có
       isUpdate: getCurrentOrderMaDonHang() != null, // true nếu có đơn hàng hiện tại, false nếu tạo mới
-      tongTien: tongThanhToan.value,
+      tongTien: tongThanhToan.value, // Lưu đơn: Sử dụng tổng tiền gốc, KHÔNG áp dụng voucher
       diaChiGiaoHang: thongTinKhachHangHienTai.value.diaChi || "",
       soDienThoai: thongTinKhachHangHienTai.value.soDienThoai || "",
-      phuongThucThanhToan: "tienmat", // Mặc định
-      ghiChu: "",
-      userVoucherId: null, // TODO: Xử lý voucher
+      phuongThucThanhToan: "", // Lưu đơn: KHÔNG lưu phương thức thanh toán
+      ghiChu: paymentData.ghiChu || "", // Lưu đơn: Vẫn lưu ghi chú
+      userVoucherId: null, // Lưu đơn: KHÔNG áp dụng voucher
+      // ✅ THÊM: Các trường mới để xử lý số lượng
+      updateProductQuantities: false, // Lưu đơn: KHÔNG trừ số lượng sản phẩm/phụ kiện
+      updateVoucherQuantities: false, // Lưu đơn: KHÔNG trừ số lượng voucher
       chiTietDonHangs: gioHang.value.flatMap(item => {
         const isSanPham = item.maSKU && !item.maSKUPhuKien;
         
@@ -445,7 +502,11 @@ async function handleSave() {
               imeiId: imeiId,
               soLuong: 1, // ✅ QUAN TRỌNG: Mỗi IMEI = 1 dòng với soLuong=1
               gia: item.gia,
-              loaiSanPham: isSanPham ? "sanpham" : "phukien"
+              loaiSanPham: isSanPham ? "sanpham" : "phukien",
+              // ✅ THÊM: Thông tin chi tiết để backend biết trừ đúng bảng
+              isSanPham: isSanPham,
+              isPhuKien: !isSanPham,
+              tableType: isSanPham ? "bien_the_san_pham" : "bien_the_phu_kien"
             };
           });
         } else {
@@ -460,7 +521,11 @@ async function handleSave() {
             imeiId: null,
             soLuong: item.soLuongMua, // ✅ Có thể > 1 nếu không có IMEI
             gia: item.gia,
-            loaiSanPham: isSanPham ? "sanpham" : "phukien"
+            loaiSanPham: isSanPham ? "sanpham" : "phukien",
+            // ✅ THÊM: Thông tin chi tiết để backend biết trừ đúng bảng
+            isSanPham: isSanPham,
+            isPhuKien: !isSanPham,
+            tableType: isSanPham ? "bien_the_san_pham" : "bien_the_phu_kien"
           }];
         }
       })
@@ -503,6 +568,22 @@ async function handleSave() {
     console.log("💾 Đã lưu đơn hàng:", result);
     alert("✅ Đã lưu đơn hàng thành công!");
     
+    // ✅ CLEAR FORM: Xóa dữ liệu khách hàng, ghi chú và phương thức thanh toán
+    console.log("🧹 Clear form sau khi lưu đơn thành công");
+    
+    // Reset thông tin khách hàng
+    thongTinKhachHangHienTai.value = {
+      tenKhachHang: "",
+      soDienThoai: "",
+      diaChi: "",
+      customerInfo: null
+    };
+    
+    // Clear form trong component ThanhToan
+    if (thanhToanRef.value) {
+      thanhToanRef.value.clearForm();
+    }
+    
   } catch (error) {
     console.error("❌ Lỗi khi lưu đơn hàng:", error);
     alert("❌ Lỗi khi lưu đơn hàng: " + error.message);
@@ -510,7 +591,7 @@ async function handleSave() {
 }
 
 // Xử lý chốt đơn
-async function handleSubmit() {
+async function handleSubmit(paymentData = {}) {
   if (gioHang.value.length === 0) {
     alert("⚠️ Giỏ hàng trống! Vui lòng thêm sản phẩm.");
     return;
@@ -540,21 +621,59 @@ async function handleSubmit() {
     console.log("🔍 DEBUG Available keys (thanhToan):", Object.keys(decoded));
     const userId = decoded.userId || decoded.id || decoded.sub;
     console.log("🔍 DEBUG Extracted userId (thanhToan):", userId);
+    
+    // ✅ SỬA LỖI: Nếu userId là username (admin), cần tìm ID thực tế
+    let actualUserId = userId;
+    if (typeof userId === 'string' && isNaN(parseInt(userId))) {
+      // userId là username, cần tìm ID thực tế từ database
+      console.log("🔍 DEBUG: Username được phát hiện, gọi API để lấy User ID...");
+      
+      try {
+        const response = await fetch(`http://localhost:8081/api/banhangtaiquay/thanh-toan/get-user-id?username=${encodeURIComponent(userId)}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          actualUserId = userData.userId;
+          console.log("✅ DEBUG: Đã lấy User ID từ API:", actualUserId);
+        } else {
+          console.warn("⚠️ WARNING: Không thể lấy User ID từ API, sử dụng fallback ID = 1");
+          actualUserId = 1; // Fallback
+        }
+      } catch (error) {
+        console.error("❌ ERROR: Lỗi khi gọi API lấy User ID:", error);
+        actualUserId = 1; // Fallback
+      }
+    }
 
     if (!userId) {
       alert("❌ Không thể lấy thông tin user từ token. Vui lòng đăng nhập lại!");
       return;
     }
 
+    // ✅ SỬA LỖI: Sử dụng dữ liệu từ paymentData thay vì hardcode
+    console.log("🔍 DEBUG: Payment data từ ThanhToan.vue (THANH TOÁN):", paymentData);
+    
+    // ✅ THÊM LOGIC MỚI: Thanh toán - Trừ số lượng sản phẩm/phụ kiện, trừ voucher nếu áp dụng
+    console.log("🔍 DEBUG: Thanh toán - Trừ số lượng sản phẩm/phụ kiện, trừ voucher nếu áp dụng");
+    
     // Chuẩn bị dữ liệu đơn hàng
     const orderData = {
-      userId: parseInt(userId) || 1, // Convert to Integer, fallback to 1
-      tongTien: tongThanhToan.value,
+      userId: parseInt(actualUserId) || 1, // Convert to Integer, fallback to 1
+      tongTien: paymentData.canThanhToan || tongThanhToan.value, // Sử dụng tổng tiền sau voucher
       diaChiGiaoHang: thongTinKhachHangHienTai.value.diaChi || "",
       soDienThoai: thongTinKhachHangHienTai.value.soDienThoai || "",
-      phuongThucThanhToan: "tienmat", // Mặc định
-      ghiChu: "",
-      userVoucherId: null, // TODO: Xử lý voucher
+      phuongThucThanhToan: paymentData.phuongThuc || "tienmat", // Sử dụng phương thức từ form
+      ghiChu: paymentData.ghiChu || "", // Sử dụng ghi chú từ form
+      userVoucherId: paymentData.voucherApplied ? paymentData.voucherInfo?.id : null, // Xử lý voucher
+      // ✅ THÊM: Các trường mới để xử lý số lượng
+      updateProductQuantities: true, // Thanh toán: TRỪ số lượng sản phẩm/phụ kiện
+      updateVoucherQuantities: paymentData.voucherApplied || false, // Thanh toán: TRỪ số lượng voucher nếu áp dụng
       chiTietDonHangs: gioHang.value.flatMap(item => {
         const isSanPham = item.maSKU && !item.maSKUPhuKien;
         
@@ -595,7 +714,11 @@ async function handleSubmit() {
               imeiId: imeiId,
               soLuong: 1, // ✅ QUAN TRỌNG: Mỗi IMEI = 1 dòng với soLuong=1
               gia: item.gia,
-              loaiSanPham: isSanPham ? "sanpham" : "phukien"
+              loaiSanPham: isSanPham ? "sanpham" : "phukien",
+              // ✅ THÊM: Thông tin chi tiết để backend biết trừ đúng bảng
+              isSanPham: isSanPham,
+              isPhuKien: !isSanPham,
+              tableType: isSanPham ? "bien_the_san_pham" : "bien_the_phu_kien"
             };
           });
         } else {
@@ -610,7 +733,11 @@ async function handleSubmit() {
             imeiId: null,
             soLuong: item.soLuongMua, // ✅ Có thể > 1 nếu không có IMEI
             gia: item.gia,
-            loaiSanPham: isSanPham ? "sanpham" : "phukien"
+            loaiSanPham: isSanPham ? "sanpham" : "phukien",
+            // ✅ THÊM: Thông tin chi tiết để backend biết trừ đúng bảng
+            isSanPham: isSanPham,
+            isPhuKien: !isSanPham,
+            tableType: isSanPham ? "bien_the_san_pham" : "bien_the_phu_kien"
           }];
         }
       })
@@ -658,6 +785,22 @@ async function handleSubmit() {
     
     alert("✅ Đã thanh toán đơn hàng thành công!\n\nĐã trừ kho và IMEI đã chuyển sang trạng thái 'Đã bán'.");
     
+    // ✅ CLEAR FORM: Xóa dữ liệu khách hàng, ghi chú và phương thức thanh toán
+    console.log("🧹 Clear form sau khi thanh toán thành công");
+    
+    // Reset thông tin khách hàng
+    thongTinKhachHangHienTai.value = {
+      tenKhachHang: "",
+      soDienThoai: "",
+      diaChi: "",
+      customerInfo: null
+    };
+    
+    // Clear form trong component ThanhToan
+    if (thanhToanRef.value) {
+      thanhToanRef.value.clearForm();
+    }
+    
   } catch (error) {
     console.error("❌ Lỗi khi thanh toán đơn hàng:", error);
     alert("❌ Lỗi khi thanh toán đơn hàng: " + error.message);
@@ -695,7 +838,42 @@ async function handleTaoDonHangMoi() {
   }
 
   // Tạo đơn hàng mới
-  await taoDonHangMoiTuDong();
+  console.log("🆕 Tạo đơn hàng mới...");
+  
+  // Tạo đơn hàng mới
+  const donHangMoi = {
+    id: Date.now().toString(),
+    maDonHang: null, // Mã đơn hàng từ SQL (null nếu chưa lưu)
+    gioHang: [],
+    tongTien: 0,
+    trangThai: "draft",
+    ngayTao: new Date().toISOString(),
+    ngayCapNhat: new Date().toISOString(),
+    // ✅ THÊM: Thông tin khách hàng trống cho đơn hàng mới
+    thongTinKhachHang: {
+      tenKhachHang: "",
+      soDienThoai: "",
+      diaChi: "",
+      customerInfo: null
+    }
+  };
+
+  danhSachDonHang.value.push(donHangMoi);
+  donHangHienTaiId.value = donHangMoi.id;
+
+  // ✅ RESET thông tin khách hàng hiển thị
+  thongTinKhachHangHienTai.value = {
+    tenKhachHang: "",
+    soDienThoai: "",
+    diaChi: "",
+    customerInfo: null
+  };
+
+  // Lưu vào localStorage
+  saveToLocalStorage();
+
+  console.log("✅ Đã tạo đơn hàng mới:", donHangMoi.id);
+  console.log("🔄 Đã reset thông tin khách hàng cho đơn hàng mới");
 
   // Xóa giỏ hàng hiện tại
   await xoaToanBoGioHang();
@@ -880,7 +1058,50 @@ function capNhatDonHangHienTai() {
     console.log("📦 Giỏ hàng hiện tại có:", gioHang.value.length, "sản phẩm");
 
     // ✅ QUAN TRỌNG: Luôn cập nhật giỏ hàng, kể cả khi trống
-    donHang.gioHang = JSON.parse(JSON.stringify(gioHang.value));
+    // ✅ SỬA LỖI: Đảm bảo thông tin loại sản phẩm, thuộc tính và giá được lưu
+    const gioHangWithLoai = gioHang.value.map(item => {
+      const itemCopy = JSON.parse(JSON.stringify(item));
+      
+      // Đảm bảo loại sản phẩm được lưu
+      if (!itemCopy.loai) {
+        if (itemCopy.maSKUPhuKien && !itemCopy.maSKU) {
+          itemCopy.loai = 'Phụ kiện';
+        } else if (itemCopy.maSKU && (itemCopy.maSKU.includes('PK-') || itemCopy.maSKU.includes('ANK-'))) {
+          itemCopy.loai = 'Phụ kiện';
+        } else {
+          itemCopy.loai = 'Sản phẩm chính';
+        }
+      }
+      
+      // ✅ SỬA LỖI: Đảm bảo thuộc tính được lưu cho phụ kiện
+      if (!itemCopy.thuocTinh && itemCopy.loai === 'Phụ kiện') {
+        if (itemCopy.thuocTinhPhuKien) {
+          itemCopy.thuocTinh = itemCopy.thuocTinhPhuKien;
+        } else {
+          itemCopy.thuocTinh = 'N/A';
+        }
+      }
+      
+      // ✅ SỬA LỖI: Đảm bảo giá được lưu cho phụ kiện
+      if (!itemCopy.gia && itemCopy.loai === 'Phụ kiện') {
+        if (itemCopy.giaPhuKien) {
+          itemCopy.gia = itemCopy.giaPhuKien;
+        } else {
+          itemCopy.gia = 0;
+        }
+      }
+      
+      console.log("🔍 DEBUG: Lưu sản phẩm với thông tin:", {
+        tenSanPham: itemCopy.tenSanPham,
+        loai: itemCopy.loai,
+        thuocTinh: itemCopy.thuocTinh,
+        gia: itemCopy.gia
+      });
+      
+      return itemCopy;
+    });
+    
+    donHang.gioHang = gioHangWithLoai;
     donHang.tongTien = tongThanhToan.value;
     
     if (gioHang.value.length > 0) {
@@ -1024,12 +1245,6 @@ async function handleChonSanPham(data) {
 
   const { sanPham, soLuong, imeiList } = data;
 
-  // Kiểm tra nếu chưa có đơn hàng nào, tự động tạo đơn hàng mới
-  if (!donHangHienTaiId.value) {
-    console.log("🆕 Chưa có đơn hàng, tự động tạo đơn hàng mới...");
-    await taoDonHangMoiTuDong();
-  }
-
   // Thêm sản phẩm vào giỏ hàng
   await themSanPham(sanPham, soLuong, imeiList);
 
@@ -1046,44 +1261,19 @@ async function handleChonSanPham(data) {
   }
 }
 
-// Tạo đơn hàng mới tự động (không hiển thị thông báo)
-async function taoDonHangMoiTuDong() {
-  console.log("🆕 Tự động tạo đơn hàng mới...");
+// Mở modal chọn sản phẩm
+function moModalChonSanPham() {
+  // ✅ SỬA LỖI: Kiểm tra nếu chưa có đơn hàng nào, yêu cầu tạo đơn hàng trước
+  if (!donHangHienTaiId.value) {
+    console.log("❌ Chưa có đơn hàng, yêu cầu tạo đơn hàng trước");
+    
+    // Hiển thị thông báo yêu cầu tạo đơn hàng
+    alert("⚠️ Vui lòng tạo đơn hàng trước khi thêm sản phẩm!\n\nNhấn nút 'Tạo đơn hàng mới' để bắt đầu.");
+    
+    return; // Dừng xử lý, không mở modal
+  }
   
-  // Tạo đơn hàng mới
-  const donHangMoi = {
-    id: Date.now().toString(),
-    maDonHang: null, // Mã đơn hàng từ SQL (null nếu chưa lưu)
-    gioHang: [],
-    tongTien: 0,
-    trangThai: "draft",
-    ngayTao: new Date().toISOString(),
-    ngayCapNhat: new Date().toISOString(),
-    // ✅ THÊM: Thông tin khách hàng trống cho đơn hàng mới
-    thongTinKhachHang: {
-      tenKhachHang: "",
-      soDienThoai: "",
-      diaChi: "",
-      customerInfo: null
-    }
-  };
-
-  danhSachDonHang.value.push(donHangMoi);
-  donHangHienTaiId.value = donHangMoi.id;
-
-  // ✅ RESET thông tin khách hàng hiển thị
-  thongTinKhachHangHienTai.value = {
-    tenKhachHang: "",
-    soDienThoai: "",
-    diaChi: "",
-    customerInfo: null
-  };
-
-  // Lưu vào localStorage
-  saveToLocalStorage();
-
-  console.log("✅ Đã tự động tạo đơn hàng mới:", donHangMoi.id);
-  console.log("🔄 Đã reset thông tin khách hàng cho đơn hàng mới");
+  isModalOpen.value = true;
 }
 
 // Cập nhật thông tin khách hàng

@@ -61,7 +61,7 @@
             {{ item.loai || 'Sản phẩm chính' }}
           </span>
         </td>
-        <td>{{ formatCurrency(item.gia) }}</td>
+        <td>{{ formatCurrency(item.gia || 0) }}</td>
         <td class="so-luong-cell">
           <span class="so-luong-text">{{
             item.imeiList ? item.imeiList.length : item.soLuongMua
@@ -79,7 +79,7 @@
             📱 {{ item.imeiList ? item.imeiList.length : 0 }}
           </button>
         </td>
-        <td class="font-bold">{{ formatCurrency(item.thanhTien) }}</td>
+        <td class="font-bold">{{ formatCurrency(item.thanhTien || 0) }}</td>
         <td>
           <button class="btn-delete" @click="xoaSanPham(item.maSKU)">🗑️</button>
         </td>

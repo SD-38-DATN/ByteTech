@@ -134,14 +134,28 @@ function formatCurrency(value) {
 
 function handleSave() {
   console.log('💾 Lưu đơn hàng...')
-  // Emit event to parent
-  emit('save')
+  // Emit event to parent với dữ liệu
+  emit('save', {
+    phuongThuc: phuongThuc.value,
+    ghiChu: ghiChu.value,
+    voucherApplied: voucherApplied.value,
+    soTienGiamVoucher: soTienGiamVoucher.value,
+    voucherInfo: voucherInfo.value,
+    canThanhToan: canThanhToan.value
+  })
 }
 
 function handleSubmit() {
   console.log('✅ Chốt đơn hàng...')
-  // Emit event to parent
-  emit('submit')
+  // Emit event to parent với dữ liệu
+  emit('submit', {
+    phuongThuc: phuongThuc.value,
+    ghiChu: ghiChu.value,
+    voucherApplied: voucherApplied.value,
+    soTienGiamVoucher: soTienGiamVoucher.value,
+    voucherInfo: voucherInfo.value,
+    canThanhToan: canThanhToan.value
+  })
 }
 
 function handlePrint() {
@@ -167,8 +181,24 @@ function onVoucherRemoved() {
   console.log('🗑️ Đã xóa voucher')
 }
 
+// Clear form function
+function clearForm() {
+  phuongThuc.value = ''
+  ghiChu.value = ''
+  voucherApplied.value = false
+  soTienGiamVoucher.value = 0
+  voucherInfo.value = null
+  
+  console.log('🧹 Đã clear form thanh toán')
+}
+
 // Emits
 const emit = defineEmits(['save', 'submit', 'print'])
+
+// Expose clearForm function
+defineExpose({
+  clearForm
+})
 </script>
 
 <style scoped>
