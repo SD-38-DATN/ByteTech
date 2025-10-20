@@ -19,16 +19,20 @@ public class Users implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
     private String tenHienThi;
     private String username;
     private String passwords;
     private String hoTen;
-    private Integer gioiTinh; // 1=Nam, 0=Nữ
+    private Integer gioiTinh; // 1=Nam, 0=Nữ, (hỗ trợ "Khác" khi !=0/1 hoặc null)
     private String email;
     private String soDienThoai;
-    @Column(name = "diaChiGiaoHang") // 🔥 thêm dòng này
+
+    @Column(name = "diaChiGiaoHang")
     private String diaChiGiaoHang;
 
+    @Column(name = "trangThai", nullable = false)
+    private String trangThai = "ACTIVE";
 
     @ManyToOne
     @JoinColumn(name = "roleID")
@@ -40,43 +44,22 @@ public class Users implements UserDetails {
     @OneToMany(mappedBy = "user")
     private List<GioHang> gioHangList;
 
-
     @OneToMany(mappedBy = "user")
     private List<DonHang> donHangList;
-
 
     @OneToMany(mappedBy = "user")
     private List<UserVoucher> userVoucherList;
 
-
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Trả về role dạng GrantedAuthority
-        return Collections.singleton(() -> "ROLE_" + role.getRoleName());
+        String roleName = (role != null && role.getRoleName() != null) ? role.getRoleName() : "USER";
+        return Collections.singleton(() -> "ROLE_" + roleName);
     }
 
-
-    @Override
-    public String getPassword() {
-        return passwords;
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
-    }
-
-    // Các phương thức còn lại (mặc định true)
-    @Override
-    public boolean isAccountNonExpired() { return true; }
-
-    @Override
-    public boolean isAccountNonLocked() { return true; }
-
-    @Override
-    public boolean isCredentialsNonExpired() { return true; }
-
-    @Override
-    public boolean isEnabled() { return true; }
+    @Override public String getPassword() { return passwords; }
+    @Override public String getUsername() { return username; }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled() { return true; }
 }

@@ -28,6 +28,9 @@ CREATE TABLE Users (
 	FOREIGN KEY (roleID) REFERENCES roles(id)
 
 );
+-- thêm cột trạng thái (ACTIVE | BLOCKED)
+ALTER TABLE Users ADD trangThai VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';
+
 
 INSERT INTO Users (tenHienThi, username, passwords, hoTen, gioiTinh, email, soDienThoai, diaChiGiaoHang, roleID)
 
