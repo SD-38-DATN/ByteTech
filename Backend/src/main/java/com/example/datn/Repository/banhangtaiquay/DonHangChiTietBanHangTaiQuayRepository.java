@@ -1,4 +1,4 @@
-package com.example.datn.Repository.BanHangTaiQuay;
+package com.example.datn.Repository.banhangtaiquay;
 
 
 import com.example.datn.Model.ChiTietDonHang;
@@ -16,5 +16,14 @@ public interface DonHangChiTietBanHangTaiQuayRepository extends JpaRepository<Ch
     @Transactional
     @Query("DELETE FROM ChiTietDonHang c WHERE c.donHang = :donHang")
     void deleteByDonHang(@Param("donHang") DonHang donHang);
+
+
+    // Xóa chi tiết đơn hàng theo đơn hàng
+    // Xóa chi tiết đơn hàng theo mã đơn hàng
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ChiTietDonHang c WHERE c.donHang.maDonHang = :maDonHang")
+    void deleteByDonHangId(@Param("maDonHang") Integer maDonHang);
+
 
 }

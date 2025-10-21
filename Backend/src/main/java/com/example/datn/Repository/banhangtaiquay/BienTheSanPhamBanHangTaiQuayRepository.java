@@ -1,4 +1,4 @@
-package com.example.datn.Repository.BanHangTaiQuay;
+package com.example.datn.Repository.banhangtaiquay;
 
 
 import com.example.datn.DTO.AdminKhuyenMai.VariantSummaryDTO;

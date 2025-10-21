@@ -1,8 +1,8 @@
 package com.example.datn.Service.banhangtaiquay;
 
-import com.example.datn.DTO.dtoBanHangTaiQuay.ImeiBanHangTaiQuayDTO;
+import com.example.datn.DTO.banhangtaiquay.ImeiBanHangTaiQuayDTO;
 import com.example.datn.Model.IMEI;
-import com.example.datn.Repository.BanHangTaiQuay.IMEIBanHangTaiQuayRepository;
+import com.example.datn.Repository.banhangtaiquay.IMEIBanHangTaiQuayRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

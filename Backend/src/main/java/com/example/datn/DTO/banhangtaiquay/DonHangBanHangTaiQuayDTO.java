@@ -1,4 +1,4 @@
-package com.example.datn.DTO.dtoBanHangTaiQuay;
+package com.example.datn.DTO.banhangtaiquay;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,6 +16,8 @@ import java.util.List;
 public class DonHangBanHangTaiQuayDTO {
     private Integer maDonHang;
     private Integer userId; // ID của nhân viên xử lý đơn hàng
+    private String tenNhanVien; // Tên nhân viên
+    private String username; // Username nhân viên
     private LocalDateTime ngayDat;
     private Integer trangThai; // 1 = Chờ thanh toán, 2 = Đã thanh toán
     private BigDecimal tongTien;

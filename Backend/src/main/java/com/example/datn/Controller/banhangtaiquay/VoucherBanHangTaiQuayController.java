@@ -1,8 +1,8 @@
 package com.example.datn.Controller.banhangtaiquay;
 
-import com.example.datn.DTO.dtoBanHangTaiQuay.VoucherBanHangTaiQuayDTO;
-import com.example.datn.DTO.dtoBanHangTaiQuay.VoucherValidateRequest;
-import com.example.datn.DTO.dtoBanHangTaiQuay.VoucherValidateResponse;
+import com.example.datn.DTO.banhangtaiquay.VoucherBanHangTaiQuayDTO;
+import com.example.datn.DTO.banhangtaiquay.VoucherValidateRequest;
+import com.example.datn.DTO.banhangtaiquay.VoucherValidateResponse;
 import com.example.datn.Service.banhangtaiquay.VoucherBanHangTaiQuayService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.example.datn.Repository.BanHangTaiQuay;
+package com.example.datn.Repository.banhangtaiquay;
 
 import com.example.datn.Model.BienThePhuKien;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,6 +14,10 @@ public interface BienThePhuKienBanHangTaiQuayRepository extends JpaRepository<Bi
     Optional<BienThePhuKien> findByMaSKUPhuKien(String maSKU);
 
     List<BienThePhuKien> findByPhuKien_MaPhuKien(Integer maPhuKien);
+    // Tìm biến thể phụ kiện theo maSKU với thuộc tính (không trang thái )
+    @Query("SELECT b FROM BienThePhuKien b LEFT JOIN FETCH b.thuocTinhPhuKienList WHERE b.maSKUPhuKien = :maSKU")
+    Optional<BienThePhuKien> findByMaSKUPhuKienWithThuocTinhNOTT(String maSKU);
+
     // Tìm biến thể phụ kiện theo maSKU với thuộc tính (chỉ trạng thái = 1)
     @Query("SELECT b FROM BienThePhuKien b LEFT JOIN FETCH b.thuocTinhPhuKienList WHERE b.maSKUPhuKien = :maSKU AND b.trangThai = 1")
     Optional<BienThePhuKien> findByMaSKUPhuKienWithThuocTinh(String maSKU);

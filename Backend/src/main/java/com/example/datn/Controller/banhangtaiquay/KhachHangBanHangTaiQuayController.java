@@ -1,6 +1,6 @@
 package com.example.datn.controller.BanHangTaiQuay;
 
-import com.example.datn.DTO.dtoBanHangTaiQuay.KhachHangBanHangTaiQuayDTO;
+import com.example.datn.DTO.banhangtaiquay.KhachHangBanHangTaiQuayDTO;
 import com.example.datn.Service.banhangtaiquay.KhachHangBanHangTaiQuayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

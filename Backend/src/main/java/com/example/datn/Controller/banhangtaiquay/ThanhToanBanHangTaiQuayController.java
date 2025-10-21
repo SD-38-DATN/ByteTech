@@ -1,8 +1,10 @@
 package com.example.datn.Controller.banhangtaiquay;
 
-import com.example.datn.DTO.dtoBanHangTaiQuay.*;
-import com.example.datn.Service.banhangtaiquay.DonHangBanHangTaiQuayService;
-import com.example.datn.Repository.BanHangTaiQuay.UsersBanHangTaiQuayRepository;
+import com.example.datn.DTO.banhangtaiquay.ChotDonRequest;
+import com.example.datn.DTO.banhangtaiquay.DonHangBanHangTaiQuayDTO;
+import com.example.datn.DTO.banhangtaiquay.LuuDonRequest;
+import com.example.datn.Service.banhangtaiquay.ThanhToanBanHangTaiQuayService;
+import com.example.datn.Repository.banhangtaiquay.UsersBanHangTaiQuayRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +17,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ThanhToanBanHangTaiQuayController {
     
-    private final DonHangBanHangTaiQuayService donHangService;
+    private final ThanhToanBanHangTaiQuayService donHangService;
     private final UsersBanHangTaiQuayRepository usersRepository;
     
     /**

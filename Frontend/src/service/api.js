@@ -829,6 +829,62 @@ export const thanhToanDonHang = async (orderData) => {
   return res.data;
 };
 
+// ==================== ĐƠN HÀNG ĐÃ LƯU API ====================
+
+/**
+ * Lấy danh sách đơn hàng đã lưu (trạng thái = 5)
+ * @param {number|null} userId - ID của user (null để lấy tất cả)
+ * @returns {Promise<Array>} Danh sách đơn hàng đã lưu
+ */
+export const getDonHangLuu = async (userId = null) => {
+  const params = userId ? { userId } : {};
+  const res = await api.get('/banhangtaiquay/don-hang-luu', { params });
+  return res.data;
+};
+
+/**
+ * Lấy chi tiết đơn hàng đã lưu theo mã đơn hàng
+ * @param {number} maDonHang - Mã đơn hàng
+ * @returns {Promise<Object>} Chi tiết đơn hàng đã lưu
+ */
+export const getDonHangLuuByMaDonHang = async (maDonHang) => {
+  const res = await api.get(`/banhangtaiquay/don-hang-luu/${maDonHang}`);
+  return res.data;
+};
+
+/**
+ * Đếm số lượng đơn hàng đã lưu
+ * @param {number|null} userId - ID của user (null để đếm tất cả)
+ * @returns {Promise<number>} Số lượng đơn hàng
+ */
+export const countDonHangLuu = async (userId = null) => {
+  const params = userId ? { userId } : {};
+  const res = await api.get('/banhangtaiquay/don-hang-luu/count', { params });
+  return res.data;
+};
+
+/**
+ * Lấy đơn hàng đã lưu của user hiện tại
+ * @param {number} userId - ID của user hiện tại
+ * @returns {Promise<Array>} Danh sách đơn hàng của user
+ */
+export const getMyDonHangLuu = async (userId) => {
+  const res = await api.get('/banhangtaiquay/don-hang-luu/my-orders', {
+    params: { userId }
+  });
+  return res.data;
+};
+
+/**
+ * Xóa đơn hàng đã lưu (chuyển trạng thái 5 → 3 và IMEI về 1)
+ * @param {number} maDonHang - Mã đơn hàng
+ * @returns {Promise<string>} - Thông báo kết quả
+ */
+export const xoaDonHangLuu = async (maDonHang) => {
+  const res = await api.delete(`/banhangtaiquay/don-hang-luu/${maDonHang}`);
+  return res.data;
+};
+
 // Dòng cuối cùng của file (trước export default)
 // Dòng cuối cùng của file
 

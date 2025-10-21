@@ -1,7 +1,7 @@
 package com.example.datn.Controller.banhangtaiquay;
 
-import com.example.datn.DTO.dtoBanHangTaiQuay.SanPhamBanHangTaiQuayDTO;
-import com.example.datn.DTO.dtoBanHangTaiQuay.ImeiBanHangTaiQuayDTO;
+import com.example.datn.DTO.banhangtaiquay.SanPhamBanHangTaiQuayDTO;
+import com.example.datn.DTO.banhangtaiquay.ImeiBanHangTaiQuayDTO;
 import com.example.datn.Service.banhangtaiquay.SanPhamBanHangTaiQuayService;
 import com.example.datn.Service.banhangtaiquay.ImeiBanHangTaiQuayService;
 import lombok.RequiredArgsConstructor;

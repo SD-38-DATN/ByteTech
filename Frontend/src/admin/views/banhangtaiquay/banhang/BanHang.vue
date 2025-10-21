@@ -327,6 +327,32 @@ async function loadDonHangHienTai() {
 initFromLocalStorage();
 setupCartItemDeletedListener();
 
+// ✅ Xử lý URL parameter loadOrder
+function handleLoadOrderFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const loadOrder = urlParams.get('loadOrder');
+  
+  if (loadOrder) {
+    console.log('🔄 Load đơn hàng từ URL:', loadOrder);
+    
+    // Tìm đơn hàng trong localStorage
+    const donHang = danhSachDonHang.value.find(dh => dh.id === loadOrder);
+    if (donHang) {
+      console.log('✅ Tìm thấy đơn hàng:', donHang.id);
+      chonDonHang(loadOrder);
+    } else {
+      console.log('❌ Không tìm thấy đơn hàng:', loadOrder);
+    }
+    
+    // Xóa parameter khỏi URL
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
+  }
+}
+
+// Gọi function xử lý URL parameter
+handleLoadOrderFromURL();
+
 // ✅ Tự động cập nhật đơn hàng khi giỏ hàng thay đổi (với debounce)
 let watcherTimeout = null;
 watch(
@@ -500,6 +526,7 @@ async function handleSave(paymentData = {}) {
               maSKU: item.maSKU,
               maSKUPhuKien: item.maSKUPhuKien,
               imeiId: imeiId,
+              imei: imei.imei || imei, // ✅ THÊM: Gửi số IMEI để backend tìm
               soLuong: 1, // ✅ QUAN TRỌNG: Mỗi IMEI = 1 dòng với soLuong=1
               gia: item.gia,
               loaiSanPham: isSanPham ? "sanpham" : "phukien",
@@ -662,9 +689,34 @@ async function handleSubmit(paymentData = {}) {
     // ✅ THÊM LOGIC MỚI: Thanh toán - Trừ số lượng sản phẩm/phụ kiện, trừ voucher nếu áp dụng
     console.log("🔍 DEBUG: Thanh toán - Trừ số lượng sản phẩm/phụ kiện, trừ voucher nếu áp dụng");
     
+    // ✅ KIỂM TRA: Đơn hàng hiện tại có phải là đơn đã lưu không?
+    const donHangCanThanhToan = danhSachDonHang.value.find(
+      (dh) => dh.id === donHangHienTaiId.value
+    );
+    const maDonHangDaLuu = donHangCanThanhToan?.maDonHang || null;
+    
+    if (maDonHangDaLuu) {
+      console.log("🔍 DEBUG: Đây là đơn hàng đã lưu - maDonHang:", maDonHangDaLuu);
+      console.log("✅ Backend sẽ CẬP NHẬT đơn cũ và XÓA chi tiết cũ trước khi thêm mới");
+    } else {
+      console.log("🔍 DEBUG: Đây là đơn hàng mới - sẽ TẠO MỚI");
+    }
+    
+    // ✅ DEBUG: Kiểm tra giỏ hàng trước khi thanh toán
+    console.log("🔍 DEBUG: Giỏ hàng trước khi thanh toán:");
+    console.log("  - Số lượng items trong giỏ:", gioHang.value.length);
+    console.log("  - Chi tiết giỏ hàng:", gioHang.value);
+    console.log("  - Danh sách sản phẩm:", gioHang.value.map(item => ({
+      tenSanPham: item.tenSanPham,
+      maSKU: item.maSKU || item.maSKUPhuKien,
+      soLuong: item.soLuongMua,
+      imeiCount: item.imeiList?.length || 0
+    })));
+    
     // Chuẩn bị dữ liệu đơn hàng
     const orderData = {
       userId: parseInt(actualUserId) || 1, // Convert to Integer, fallback to 1
+      maDonHang: maDonHangDaLuu, // ✅ QUAN TRỌNG: Truyền maDonHang nếu là đơn đã lưu
       tongTien: paymentData.canThanhToan || tongThanhToan.value, // Sử dụng tổng tiền sau voucher
       diaChiGiaoHang: thongTinKhachHangHienTai.value.diaChi || "",
       soDienThoai: thongTinKhachHangHienTai.value.soDienThoai || "",
@@ -712,6 +764,7 @@ async function handleSubmit(paymentData = {}) {
               maSKU: item.maSKU,
               maSKUPhuKien: item.maSKUPhuKien,
               imeiId: imeiId,
+              imei: imei.imei || imei, // ✅ THÊM: Gửi số IMEI để backend tìm
               soLuong: 1, // ✅ QUAN TRỌNG: Mỗi IMEI = 1 dòng với soLuong=1
               gia: item.gia,
               loaiSanPham: isSanPham ? "sanpham" : "phukien",
@@ -742,6 +795,12 @@ async function handleSubmit(paymentData = {}) {
         }
       })
     };
+
+    // ✅ DEBUG: Kiểm tra dữ liệu gửi lên backend
+    console.log("🔍 DEBUG: Dữ liệu gửi lên backend:");
+    console.log("  - maDonHang:", orderData.maDonHang);
+    console.log("  - Số chi tiết đơn hàng:", orderData.chiTietDonHangs.length);
+    console.log("  - Chi tiết đơn hàng:", orderData.chiTietDonHangs);
 
     // Gọi API thanh toán đơn hàng
     const { thanhToanDonHang } = await import('@/service/api');
@@ -893,41 +952,95 @@ async function xoaTatCaDonHang() {
       "⚠️ Bạn có chắc muốn xóa TẤT CẢ đơn hàng?\n\nHành động này không thể hoàn tác!\n\nTất cả IMEI trong các đơn hàng sẽ được chuyển về trạng thái 'Còn hàng'."
     )
   ) {
-    // ✅ QUAN TRỌNG: Cập nhật trạng thái tất cả IMEI trong tất cả đơn hàng về "còn hàng" trước khi xóa
-    console.log("🔄 Cập nhật trạng thái IMEI của tất cả đơn hàng trước khi xóa...");
-    
-    const allImeis = [];
-    danhSachDonHang.value.forEach(donHang => {
-      if (donHang.gioHang && donHang.gioHang.length > 0) {
-        donHang.gioHang.forEach(item => {
-          if (item.imeiList && Array.isArray(item.imeiList) && item.imeiList.length > 0) {
-            const imeiNumbers = item.imeiList.map(imei => imei.imei || imei);
-            allImeis.push(...imeiNumbers);
+    try {
+      console.log("🔄 Bắt đầu xóa tất cả đơn hàng...");
+      
+      // ✅ PHÂN LOẠI ĐƠN HÀNG: Đã lưu vs chưa lưu
+      const savedOrders = [];
+      const draftOrders = [];
+      
+      danhSachDonHang.value.forEach(donHang => {
+        const isSavedOrder = (donHang.trangThai === "saved" && donHang.maDonHang) || 
+                             (donHang.id && donHang.id.toString().startsWith("saved_"));
+        
+        if (isSavedOrder) {
+          savedOrders.push(donHang);
+        } else {
+          draftOrders.push(donHang);
+        }
+      });
+      
+      console.log(`📊 Phân loại: ${savedOrders.length} đơn hàng đã lưu, ${draftOrders.length} đơn hàng chưa lưu`);
+      
+      // ✅ XỬ LÝ ĐƠN HÀNG ĐÃ LƯU: Gọi API xóa từng đơn hàng
+      if (savedOrders.length > 0) {
+        console.log("🗑️ Xóa đơn hàng đã lưu từ database...");
+        const { xoaDonHangLuu } = await import("@/service/api.js");
+        
+        for (const donHang of savedOrders) {
+          try {
+            // Lấy mã đơn hàng từ maDonHang hoặc từ ID
+            let maDonHangToDelete = donHang.maDonHang;
+            if (!maDonHangToDelete && donHang.id && donHang.id.toString().startsWith("saved_")) {
+              maDonHangToDelete = parseInt(donHang.id.toString().replace("saved_", ""));
+            }
+            
+            if (maDonHangToDelete) {
+              console.log(`🗑️ Xóa đơn hàng đã lưu: ${maDonHangToDelete}`);
+              await xoaDonHangLuu(maDonHangToDelete);
+              console.log(`✅ Đã xóa đơn hàng đã lưu: ${maDonHangToDelete}`);
+            }
+          } catch (error) {
+            console.error(`❌ Lỗi khi xóa đơn hàng đã lưu ${donHang.id}:`, error);
+            // Tiếp tục xóa đơn hàng khác dù có lỗi
+          }
+        }
+      }
+      
+      // ✅ XỬ LÝ ĐƠN HÀNG CHƯA LƯU: Cập nhật trạng thái IMEI về "còn hàng"
+      if (draftOrders.length > 0) {
+        console.log("🔄 Cập nhật trạng thái IMEI của đơn hàng chưa lưu...");
+        
+        const allImeis = [];
+        draftOrders.forEach(donHang => {
+          if (donHang.gioHang && donHang.gioHang.length > 0) {
+            donHang.gioHang.forEach(item => {
+              if (item.imeiList && Array.isArray(item.imeiList) && item.imeiList.length > 0) {
+                const imeiNumbers = item.imeiList.map(imei => imei.imei || imei);
+                allImeis.push(...imeiNumbers);
+              }
+            });
           }
         });
-      }
-    });
 
-    if (allImeis.length > 0) {
-      try {
-        console.log(`🔄 Cập nhật ${allImeis.length} IMEI về trạng thái "còn hàng"...`);
-        const { setImeiToStock } = await import("@/service/api.js");
-        await setImeiToStock(allImeis);
-        console.log("✅ Đã cập nhật tất cả IMEI về trạng thái 'còn hàng'");
-      } catch (error) {
-        console.error("❌ Lỗi khi cập nhật trạng thái IMEI:", error);
-        // Vẫn tiếp tục xóa đơn hàng dù có lỗi
+        if (allImeis.length > 0) {
+          try {
+            console.log(`🔄 Cập nhật ${allImeis.length} IMEI về trạng thái "còn hàng"...`);
+            const { setImeiToStock } = await import("@/service/api.js");
+            await setImeiToStock(allImeis);
+            console.log("✅ Đã cập nhật tất cả IMEI về trạng thái 'còn hàng'");
+          } catch (error) {
+            console.error("❌ Lỗi khi cập nhật trạng thái IMEI:", error);
+            // Vẫn tiếp tục xóa đơn hàng dù có lỗi
+          }
+        } else {
+          console.log("ℹ️ Không có IMEI nào để cập nhật");
+        }
       }
-    } else {
-      console.log("ℹ️ Không có IMEI nào để cập nhật");
+
+      // ✅ XÓA TẤT CẢ ĐƠN HÀNG KHỎI DANH SÁCH LOCAL
+      danhSachDonHang.value = [];
+      donHangHienTaiId.value = null;
+      await xoaToanBoGioHang();
+      saveToLocalStorage();
+      
+      console.log("🗑️ Đã xóa tất cả đơn hàng");
+      alert("✅ Đã xóa tất cả đơn hàng!\n\nTất cả IMEI đã được chuyển về trạng thái 'Còn hàng'.");
+      
+    } catch (error) {
+      console.error("❌ Lỗi khi xóa tất cả đơn hàng:", error);
+      alert("❌ Lỗi khi xóa tất cả đơn hàng: " + error.message);
     }
-
-    danhSachDonHang.value = [];
-    donHangHienTaiId.value = null;
-    await xoaToanBoGioHang();
-    saveToLocalStorage();
-    console.log("🗑️ Đã xóa tất cả đơn hàng");
-    alert("✅ Đã xóa tất cả đơn hàng!\n\nTất cả IMEI đã được chuyển về trạng thái 'Còn hàng'.");
   }
 }
 
@@ -1151,60 +1264,96 @@ async function xoaDonHang(donHangId) {
   const donHang = danhSachDonHang.value.find((dh) => dh.id === donHangId);
   if (!donHang) return;
 
-  const confirmDelete = confirm(
-    `⚠️ Bạn có chắc muốn xóa đơn hàng này?\n\nĐơn hàng sẽ bị xóa vĩnh viễn và không thể khôi phục.\n\nTất cả IMEI trong đơn hàng sẽ được chuyển về trạng thái "Còn hàng".`
-  );
+  // ✅ KIỂM TRA: Đơn hàng đã lưu hay chưa lưu
+  console.log("🔍 DEBUG: Kiểm tra đơn hàng:", {
+    id: donHang.id,
+    trangThai: donHang.trangThai,
+    maDonHang: donHang.maDonHang
+  });
+  // ✅ KIỂM TRA: Đơn hàng đã lưu (có maDonHang thực tế hoặc ID bắt đầu bằng "saved_")
+  const isSavedOrder = (donHang.trangThai === "saved" && donHang.maDonHang) || 
+                       (donHang.id && donHang.id.toString().startsWith("saved_"));
+  console.log("🔍 DEBUG: isSavedOrder =", isSavedOrder);
+  
+  const confirmMessage = isSavedOrder 
+    ? `⚠️ Bạn có chắc muốn xóa đơn hàng đã lưu này?\n\nĐơn hàng sẽ bị xóa vĩnh viễn và không thể khôi phục.\n\nTất cả IMEI trong đơn hàng sẽ được chuyển về trạng thái "Còn hàng".`
+    : `⚠️ Bạn có chắc muốn xóa đơn hàng này?\n\nĐơn hàng sẽ bị xóa vĩnh viễn và không thể khôi phục.\n\nTất cả IMEI trong đơn hàng sẽ được chuyển về trạng thái "Còn hàng".`;
+    
+  const confirmDelete = confirm(confirmMessage);
   if (!confirmDelete) return;
 
-  // ✅ QUAN TRỌNG: Cập nhật trạng thái tất cả IMEI trong đơn hàng về "còn hàng" trước khi xóa
-  if (donHang.gioHang && donHang.gioHang.length > 0) {
-    console.log("🔄 Cập nhật trạng thái IMEI của đơn hàng trước khi xóa...");
+  try {
+    // ✅ XỬ LÝ ĐƠN HÀNG ĐÃ LƯU: Gọi API xóa đơn hàng
+    if (isSavedOrder) {
+      // ✅ LẤY MÃ ĐƠN HÀNG: Từ maDonHang hoặc từ ID (saved_123 -> 123)
+      let maDonHangToDelete = donHang.maDonHang;
+      if (!maDonHangToDelete && donHang.id && donHang.id.toString().startsWith("saved_")) {
+        // Lấy số từ ID: saved_123 -> 123
+        maDonHangToDelete = parseInt(donHang.id.toString().replace("saved_", ""));
+      }
+      
+      console.log("🗑️ Xóa đơn hàng đã lưu từ database:", maDonHangToDelete);
+      const { xoaDonHangLuu } = await import("@/service/api.js");
+      console.log("🔍 DEBUG: Đang gọi API xoaDonHangLuu với maDonHang:", maDonHangToDelete);
+      const result = await xoaDonHangLuu(maDonHangToDelete);
+      console.log("🔍 DEBUG: Kết quả API:", result);
+      console.log("✅ Đã xóa đơn hàng đã lưu từ database");
+    } else {
+      // ✅ XỬ LÝ ĐƠN HÀNG CHƯA LƯU: Cập nhật trạng thái IMEI về "còn hàng"
+      if (donHang.gioHang && donHang.gioHang.length > 0) {
+        console.log("🔄 Cập nhật trạng thái IMEI của đơn hàng chưa lưu trước khi xóa...");
+        
+        // Thu thập tất cả IMEI từ đơn hàng
+        const allImeis = [];
+        donHang.gioHang.forEach(item => {
+          if (item.imeiList && Array.isArray(item.imeiList) && item.imeiList.length > 0) {
+            const imeiNumbers = item.imeiList.map(imei => imei.imei || imei);
+            allImeis.push(...imeiNumbers);
+          }
+        });
+
+        if (allImeis.length > 0) {
+          try {
+            console.log(`🔄 Cập nhật ${allImeis.length} IMEI về trạng thái "còn hàng"...`);
+            const { setImeiToStock } = await import("@/service/api.js");
+            await setImeiToStock(allImeis);
+            console.log("✅ Đã cập nhật tất cả IMEI về trạng thái 'còn hàng'");
+          } catch (error) {
+            console.error("❌ Lỗi khi cập nhật trạng thái IMEI:", error);
+            // Vẫn tiếp tục xóa đơn hàng dù có lỗi
+          }
+        } else {
+          console.log("ℹ️ Đơn hàng không có IMEI nào để cập nhật");
+        }
+      }
+    }
+
+    // Xóa đơn hàng khỏi danh sách
+    const index = danhSachDonHang.value.findIndex((dh) => dh.id === donHangId);
+    danhSachDonHang.value.splice(index, 1);
+
+    // Nếu đang xử lý đơn hàng bị xóa, chuyển về đơn hàng khác hoặc xóa giỏ hàng
+    if (donHangHienTaiId.value === donHangId) {
+      if (danhSachDonHang.value.length > 0) {
+        // Chuyển về đơn hàng đầu tiên
+        chonDonHang(danhSachDonHang.value[0].id);
+      } else {
+        // Không còn đơn hàng nào, xóa giỏ hàng
+        donHangHienTaiId.value = null;
+        await xoaToanBoGioHang();
+      }
+    }
+
+    // Lưu vào localStorage
+    saveToLocalStorage();
+
+    console.log("🗑️ Đã xóa đơn hàng:", donHangId);
+    alert("✅ Đã xóa đơn hàng thành công!\n\nTất cả IMEI đã được chuyển về trạng thái 'Còn hàng'.");
     
-    // Thu thập tất cả IMEI từ đơn hàng
-    const allImeis = [];
-    donHang.gioHang.forEach(item => {
-      if (item.imeiList && Array.isArray(item.imeiList) && item.imeiList.length > 0) {
-        const imeiNumbers = item.imeiList.map(imei => imei.imei || imei);
-        allImeis.push(...imeiNumbers);
-      }
-    });
-
-    if (allImeis.length > 0) {
-      try {
-        console.log(`🔄 Cập nhật ${allImeis.length} IMEI về trạng thái "còn hàng"...`);
-        const { setImeiToStock } = await import("@/service/api.js");
-        await setImeiToStock(allImeis);
-        console.log("✅ Đã cập nhật tất cả IMEI về trạng thái 'còn hàng'");
-      } catch (error) {
-        console.error("❌ Lỗi khi cập nhật trạng thái IMEI:", error);
-        // Vẫn tiếp tục xóa đơn hàng dù có lỗi
-      }
-    } else {
-      console.log("ℹ️ Đơn hàng không có IMEI nào để cập nhật");
-    }
+  } catch (error) {
+    console.error("❌ Lỗi khi xóa đơn hàng:", error);
+    alert("❌ Lỗi khi xóa đơn hàng: " + error.message);
   }
-
-  // Xóa đơn hàng khỏi danh sách
-  const index = danhSachDonHang.value.findIndex((dh) => dh.id === donHangId);
-  danhSachDonHang.value.splice(index, 1);
-
-  // Nếu đang xử lý đơn hàng bị xóa, chuyển về đơn hàng khác hoặc xóa giỏ hàng
-  if (donHangHienTaiId.value === donHangId) {
-    if (danhSachDonHang.value.length > 0) {
-      // Chuyển về đơn hàng đầu tiên
-      chonDonHang(danhSachDonHang.value[0].id);
-    } else {
-      // Không còn đơn hàng nào, xóa giỏ hàng
-      donHangHienTaiId.value = null;
-      await xoaToanBoGioHang();
-    }
-  }
-
-  // Lưu vào localStorage
-  saveToLocalStorage();
-
-  console.log("🗑️ Đã xóa đơn hàng:", donHangId);
-  alert("✅ Đã xóa đơn hàng thành công!\n\nTất cả IMEI đã được chuyển về trạng thái 'Còn hàng'.");
 }
 
 // Lấy số thứ tự đơn hàng hiện tại

@@ -15,9 +15,9 @@
       </tr>
     </thead>
     <tbody>
-      <tr v-for="(item, index) in gioHang" :key="item.maSKU">
+      <tr v-for="(item, index) in gioHang" :key="item.maSKU || item.maSKUPhuKien">
         <td>{{ index + 1 }}</td>
-        <td>{{ item.maSKU }}</td>
+        <td>{{ item.maSKU || item.maSKUPhuKien }}</td>
         <td class="text-left">{{ item.tenSanPham }}</td>
         <td class="thuoc-tinh-cell">
           <div
@@ -81,7 +81,7 @@
         </td>
         <td class="font-bold">{{ formatCurrency(item.thanhTien || 0) }}</td>
         <td>
-          <button class="btn-delete" @click="xoaSanPham(item.maSKU)">🗑️</button>
+          <button class="btn-delete" @click="xoaSanPham(item.maSKU || item.maSKUPhuKien)">🗑️</button>
         </td>
       </tr>
     </tbody>
@@ -121,7 +121,7 @@
               </div>
               <button 
                 class="btn-remove-imei-card"
-                @click="xoaImei(selectedItem.maSKU, index)"
+                @click="xoaImei(selectedItem.maSKU || selectedItem.maSKUPhuKien, index)"
                 title="Xóa IMEI"
               >
                 ✕

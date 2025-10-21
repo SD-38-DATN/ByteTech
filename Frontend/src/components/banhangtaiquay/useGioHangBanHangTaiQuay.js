@@ -142,9 +142,12 @@ export function useGioHangBanHangTaiQuay() {
         itemMoi.tenSanPham = sanPham.tenPhuKien;
       }
 
-      // Xử lý maSKU cho phụ kiện
+      // ✅ SỬA LỖI: Xử lý maSKU cho phụ kiện - KHÔNG ghi đè maSKU
+      // Phụ kiện phải có maSKUPhuKien và maSKU = null để logic phân biệt hoạt động
       if (sanPham.maSKUPhuKien && !sanPham.maSKU) {
-        itemMoi.maSKU = sanPham.maSKUPhuKien;
+        itemMoi.maSKUPhuKien = sanPham.maSKUPhuKien;
+        itemMoi.maSKU = null; // Đảm bảo maSKU là null cho phụ kiện
+        console.log("✅ Thêm sản phẩm: Phụ kiện - maSKUPhuKien:", sanPham.maSKUPhuKien);
       }
 
       // ✅ SỬA LỖI: Xử lý thuộc tính cho phụ kiện - kiểm tra cấu trúc lồng nhau
@@ -241,7 +244,8 @@ export function useGioHangBanHangTaiQuay() {
 
   // Cập nhật số lượng sản phẩm
   function capNhatSoLuong(maSKU, soLuongMoi) {
-    const item = gioHang.value.find((sp) => sp.maSKU === maSKU);
+    // ✅ SỬA LỖI: Tìm sản phẩm theo cả maSKU và maSKUPhuKien
+    const item = gioHang.value.find((sp) => sp.maSKU === maSKU || sp.maSKUPhuKien === maSKU);
     if (item && soLuongMoi > 0) {
       const soLuongCu = item.soLuongMua;
       item.soLuongMua = soLuongMoi;
@@ -260,7 +264,8 @@ export function useGioHangBanHangTaiQuay() {
 
   // Cập nhật số lượng dựa trên IMEI
   function capNhatSoLuongTheoImei(maSKU) {
-    const item = gioHang.value.find((sp) => sp.maSKU === maSKU);
+    // ✅ SỬA LỖI: Tìm sản phẩm theo cả maSKU và maSKUPhuKien
+    const item = gioHang.value.find((sp) => sp.maSKU === maSKU || sp.maSKUPhuKien === maSKU);
     if (item && item.imeiList) {
       const soLuongCu = item.soLuongMua;
       item.soLuongMua = item.imeiList.length;
@@ -286,11 +291,12 @@ export function useGioHangBanHangTaiQuay() {
 
   /**
    * Xóa sản phẩm khỏi giỏ hàng
-   * @param {string} maSKU - Mã SKU của sản phẩm cần xóa
+   * @param {string} maSKU - Mã SKU của sản phẩm cần xóa (có thể là maSKU hoặc maSKUPhuKien)
    * @returns {Promise<void>}
    */
   async function xoaSanPham(maSKU) {
-    const index = gioHang.value.findIndex((item) => item.maSKU === maSKU);
+    // ✅ SỬA LỖI: Tìm sản phẩm theo cả maSKU và maSKUPhuKien
+    const index = gioHang.value.findIndex((item) => item.maSKU === maSKU || item.maSKUPhuKien === maSKU);
     if (index !== -1) {
       const item = gioHang.value[index];
       
@@ -326,12 +332,13 @@ export function useGioHangBanHangTaiQuay() {
 
   /**
    * Xóa IMEI cụ thể khỏi sản phẩm
-   * @param {string} maSKU - Mã SKU của sản phẩm
+   * @param {string} maSKU - Mã SKU của sản phẩm (có thể là maSKU hoặc maSKUPhuKien)
    * @param {number} imeiIndex - Index của IMEI cần xóa
    * @returns {Promise<void>}
    */
   async function xoaImei(maSKU, imeiIndex) {
-    const item = gioHang.value.find((sp) => sp.maSKU === maSKU);
+    // ✅ SỬA LỖI: Tìm sản phẩm theo cả maSKU và maSKUPhuKien
+    const item = gioHang.value.find((sp) => sp.maSKU === maSKU || sp.maSKUPhuKien === maSKU);
     if (item && item.imeiList && item.imeiList.length > imeiIndex) {
       const imeiRemoved = item.imeiList.splice(imeiIndex, 1)[0];
       console.log("🗑️ Đã xóa IMEI:", imeiRemoved, "khỏi sản phẩm:", maSKU);
@@ -548,12 +555,21 @@ export function useGioHangBanHangTaiQuay() {
       console.log("✅ Mặc định: Sản phẩm chính");
     }
 
+    // ✅ SỬA LỖI: Đảm bảo maSKU và maSKUPhuKien được set đúng cho phụ kiện
+    // Phụ kiện phải có maSKUPhuKien và maSKU = null để logic phân biệt hoạt động
+    if (itemMoi.loai === 'Phụ kiện' && sanPham.maSKUPhuKien && !sanPham.maSKU) {
+      itemMoi.maSKUPhuKien = sanPham.maSKUPhuKien;
+      itemMoi.maSKU = null; // Đảm bảo maSKU là null cho phụ kiện
+      console.log("✅ Load từ đơn hàng: Phụ kiện - maSKUPhuKien:", sanPham.maSKUPhuKien);
+    }
+
     // ✅ QUAN TRỌNG: THÊM sản phẩm vào giỏ hàng (không thay thế)
     // Kiểm tra xem sản phẩm đã tồn tại chưa để tránh trùng lặp
-    const existingIndex = gioHang.value.findIndex(item => 
-      item.maSKU === itemMoi.maSKU && 
-      JSON.stringify(item.imeiList) === JSON.stringify(itemMoi.imeiList)
-    );
+    // ✅ SỬA LỖI: Kiểm tra cả maSKU và maSKUPhuKien
+    const existingIndex = gioHang.value.findIndex(item => {
+      const skuMatch = item.maSKU ? (item.maSKU === itemMoi.maSKU) : (item.maSKUPhuKien === itemMoi.maSKUPhuKien);
+      return skuMatch && JSON.stringify(item.imeiList) === JSON.stringify(itemMoi.imeiList);
+    });
     
     if (existingIndex === -1) {
       // Sản phẩm chưa tồn tại, thêm mới

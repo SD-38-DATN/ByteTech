@@ -1,4 +1,4 @@
-package com.example.datn.DTO.dtoBanHangTaiQuay;
+package com.example.datn.DTO.banhangtaiquay;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +16,8 @@ public class ChiTietDonHangBanHangTaiQuayDTO {
     private Integer maDonHang;
     private String maSKU; // Sản phẩm chính
     private String maSKUPhuKien; // Phụ kiện
-    private Integer imeiId;
+    private Object imeiId; // Có thể là Integer hoặc String (temp ID)
+    private String imei; // Số IMEI
     private Integer soLuong;
     private BigDecimal gia;
     private String loaiSanPham; // "sanpham" hoặc "phukien"

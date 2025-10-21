@@ -1,4 +1,4 @@
-package com.example.datn.Repository.BanHangTaiQuay;
+package com.example.datn.Repository.banhangtaiquay;
 
 import com.example.datn.Model.IMEI;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,8 +12,8 @@ import java.util.Optional;
 
 public interface IMEIBanHangTaiQuayRepository extends JpaRepository<IMEI , Integer> {
 
-    // Tìm IMEI theo số IMEI chính xác (chỉ trạng thái = 1)
-    @Query("SELECT i FROM IMEI i WHERE i.imei = :imei AND i.trangThai = 1")
+    // Tìm IMEI theo số IMEI chính xác (bất kỳ trạng thái nào)
+    @Query("SELECT i FROM IMEI i WHERE i.imei = :imei")
     Optional<IMEI> findByImei(String imei);
 
     // Đếm số lượng IMEI theo SKU sản phẩm (chỉ trạng thái = 1)

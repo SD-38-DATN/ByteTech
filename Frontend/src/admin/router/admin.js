@@ -28,45 +28,47 @@
 //         caNhanRouter,
 //         sanPhamRouter,
 //         voucherRouter
-//     ] 
+//     ]
 // }
-// export default AdminRouter 
+// export default AdminRouter
 
-import FomAdmin from "../layout/FomAdmin.vue"
-import HomeAdmin from "../views/HomeAdmin.vue"
-import banHangRouter from "./BanHang"
-import khachHangRouter from "./KhachHang"
-import khuyenMaiRouter from "./KhuyenMai"
-import nhanVienRouter from "./NhanVien"
-import sanPhamRouter from "./SanPham"
-import phukienRouter from "./PhuKien"
+import FomAdmin from "../layout/FomAdmin.vue";
+import HomeAdmin from "../views/HomeAdmin.vue";
+import banHangRouter from "./BanHang";
+import khachHangRouter from "./KhachHang";
+import khuyenMaiRouter from "./KhuyenMai";
+import nhanVienRouter from "./NhanVien";
+import sanPhamRouter from "./SanPham";
+import phukienRouter from "./PhuKien";
 
-import caNhanRouter from "./ThongTinCaNhan"
-import voucherRouter from "./Voucher"
-import phuKienRouter from "./PhuKien"
+import caNhanRouter from "./ThongTinCaNhan";
+import voucherRouter from "./Voucher";
+import phuKienRouter from "./PhuKien";
 
-import thongKeRouter from "./ThongKe"
-import donHangRouter from "./DonHang"
+import thongKeRouter from "./ThongKe";
+import donHangRouter from "./DonHang";
+import xuLyDonLuuRouter from "./XuLyDonLuu";
 const AdminRouter = {
-  path: '/admin',
+  path: "/admin",
   component: FomAdmin,
   children: [
     {
-      path: '',
-      name: 'HomeAdmin',
-      component: HomeAdmin
+      path: "",
+      name: "HomeAdmin",
+      component: HomeAdmin,
     },
     banHangRouter,
     khachHangRouter,
     khuyenMaiRouter,
     nhanVienRouter,
     caNhanRouter,
-    sanPhamRouter,  // chứa cả SanPham + DanhMucSanPham
+    sanPhamRouter, // chứa cả SanPham + DanhMucSanPham
     phuKienRouter,
     thongKeRouter,
+    voucherRouter,
     donHangRouter,
-    voucherRouter
-  ]
-}
+    xuLyDonLuuRouter
+  ],
+};
 
-export default AdminRouter
+export default AdminRouter;

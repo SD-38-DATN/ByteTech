@@ -32,7 +32,7 @@
             </a>
             <ul class="submenu" :class="{'open': openSubmenus.banhang}">
               <li><RouterLink to="/admin/ban-hang">Bán hàng</RouterLink></li>
-                <li><RouterLink to="/admin/san-pham">Don Hang</RouterLink></li> 
+               <li><RouterLink to="/admin/xu-ly-don-luu">Đơn Đã Lưu</RouterLink></li> 
             </ul>
           </li>
          

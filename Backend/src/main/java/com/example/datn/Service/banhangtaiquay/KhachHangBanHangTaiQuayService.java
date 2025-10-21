@@ -1,9 +1,8 @@
 package com.example.datn.Service.banhangtaiquay;
 
-import com.example.datn.DTO.dtoBanHangTaiQuay.KhachHangBanHangTaiQuayDTO;
+import com.example.datn.DTO.banhangtaiquay.KhachHangBanHangTaiQuayDTO;
 import com.example.datn.Model.Users;
-import com.example.datn.Repository.BanHangTaiQuay.UsersBanHangTaiQuayRepository;
-import com.example.datn.Repository.UsersRepository;
+import com.example.datn.Repository.banhangtaiquay.UsersBanHangTaiQuayRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

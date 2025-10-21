@@ -1,4 +1,4 @@
-package com.example.datn.DTO.dtoBanHangTaiQuay;
+package com.example.datn.DTO.banhangtaiquay;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

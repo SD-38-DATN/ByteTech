@@ -22,7 +22,9 @@ use datn
 
 			   select * from IMEI
 			   select *from BienTheSanPham
+			   where maSKU = 'ANK-20K-BLK'
 			   select * from BienThePhuKien
+			   where maSKUPhuKien = 'ANK-20K-BLK'
 			   select *from DonHang
 			   select * from ChiTietDonHang
 			   select* from Voucher

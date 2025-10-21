@@ -85,7 +85,7 @@
               </div>
 
               <p class="text-center text-muted mt-4 small">
-                Chưa có tài khoản? <router-link to="/register" class="fw-bold text-decoration-none link-primary">Đăng ký ngay</router-link>
+                <!-- Đăng ký tạm thời bị ẩn -->
               </p>
             </div>
 
@@ -131,6 +131,7 @@
 <script>
 // SCRIPT GIỮ NGUYÊN
 import axios from "axios";
+import { loginApi } from "@/service/api";
 export default {
   name: "Login",
   data() {
@@ -166,10 +167,10 @@ export default {
     async loginSeller() {
       this.isSellerLoading = true; this.sellerError = null;
       try {
-        const res = await axios.post("http://localhost:8081/api/auth/login", this.sellerForm);
-        const role = res.data.role;
+        const res = await loginApi(this.sellerForm);
+        const role = res.role;
         if (role === 'ROLE_ADMIN' || role === 'ROLE_STAFF') {
-          this.saveAuthData(res.data); this.$router.push("/admin");
+          this.saveAuthData(res); this.$router.push("/admin");
         } else {
           this.sellerError = "Bạn không có quyền truy cập Kênh Người Bán.";
         }

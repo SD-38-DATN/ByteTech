@@ -1,14 +1,13 @@
 package com.example.datn.Service.banhangtaiquay;
 
-import com.example.datn.DTO.dtoBanHangTaiQuay.SanPhamBanHangTaiQuayDTO;
-import com.example.datn.DTO.dtoBanHangTaiQuay.PhuKienBanHangTaiQuayDTO;
+import com.example.datn.DTO.banhangtaiquay.SanPhamBanHangTaiQuayDTO;
+import com.example.datn.DTO.banhangtaiquay.PhuKienBanHangTaiQuayDTO;
 import com.example.datn.Model.BienTheSanPham;
 import com.example.datn.Model.BienThePhuKien;
 import com.example.datn.Model.IMEI;
-import com.example.datn.Repository.BanHangTaiQuay.BienTheSanPhamBanHangTaiQuayRepository;
-import com.example.datn.Repository.BanHangTaiQuay.BienThePhuKienBanHangTaiQuayRepository;
-import com.example.datn.Repository.BienTheSanPhamRepository;
-import com.example.datn.Repository.BanHangTaiQuay.IMEIBanHangTaiQuayRepository;
+import com.example.datn.Repository.banhangtaiquay.BienTheSanPhamBanHangTaiQuayRepository;
+import com.example.datn.Repository.banhangtaiquay.BienThePhuKienBanHangTaiQuayRepository;
+import com.example.datn.Repository.banhangtaiquay.IMEIBanHangTaiQuayRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

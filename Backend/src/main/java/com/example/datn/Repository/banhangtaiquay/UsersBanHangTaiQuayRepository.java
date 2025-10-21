@@ -1,4 +1,4 @@
-package com.example.datn.Repository.BanHangTaiQuay;
+package com.example.datn.Repository.banhangtaiquay;
 
 import com.example.datn.Model.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,9 +14,6 @@ public interface UsersBanHangTaiQuayRepository extends JpaRepository<Users, Inte
     Optional<Users> findByUsername(String username);
 
     Optional<Users> findByEmail(String email);
-
-
-
 
     @Query("SELECT u FROM Users u WHERE u.role.roleName = :roleName")
     List<Users> findByRoleName(@Param("roleName") String roleName);
