@@ -1,6 +1,7 @@
 package com.example.datn.Model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,8 +27,10 @@ public class Users implements UserDetails {
     private Integer gioiTinh; // 1=Nam, 0=Nữ
     private String email;
     private String soDienThoai;
-    @Column(name = "diaChiGiaoHang") // 🔥 thêm dòng này
+    @Column(name = "diaChiGiaoHang")
     private String diaChiGiaoHang;
+
+    //private Integer roleID; // 1 = user, 2 = admin, 3 = nhân viên
 
 
     @ManyToOne

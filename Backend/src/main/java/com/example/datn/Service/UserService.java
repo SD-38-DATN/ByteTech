@@ -29,6 +29,7 @@ public class UserService {
                 e.getId(),
                 e.getTenHienThi(),
                 e.getUsername(),
+                e.getPassword(),
                 e.getHoTen(),
                 e.getGioiTinh(),
                 e.getEmail(),
