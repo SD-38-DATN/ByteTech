@@ -1,15 +1,3 @@
-/**
- * Composable quản lý giỏ hàng bán hàng tại quầy
- *
- * Chức năng chính:
- * - Quản lý giỏ hàng (thêm, xóa, cập nhật sản phẩm)
- * - Quản lý IMEI (cập nhật trạng thái khi thêm/xóa sản phẩm)
- * - Tính toán thành tiền, khuyến mãi
- * - Lưu trữ dữ liệu trong localStorage
- *
- * @author DATN Team
- * @version 1.0.0
- */
 import { ref, computed } from "vue";
 import {
   // Unified API - Chỉ sử dụng API thống nhất
@@ -23,20 +11,7 @@ const gioHang = ref([]);
 const isSwitchingOrder = ref(false); // Flag để tránh cập nhật IMEI không cần thiết
 
 export function useGioHangBanHangTaiQuay() {
-  /**
-   * Thêm sản phẩm vào giỏ hàng
-   * @param {Object} sanPham - Thông tin sản phẩm
-   * @param {number} soLuong - Số lượng sản phẩm (mặc định = 1)
-   * @param {Array} imeiList - Danh sách IMEI (nếu có)
-   * @param {boolean} autoCreateOrder - Tự động tạo đơn hàng mới
-   * @returns {Promise<void>}
-   */
-  async function themSanPham(
-    sanPham,
-    soLuong = 1,
-    imeiList = [],
-    autoCreateOrder = false
-  ) {
+  async function themSanPham(sanPham, soLuong = 1, imeiList = []) {
     // Cập nhật trạng thái IMEI thành 5 nếu có IMEI (sử dụng API thống nhất)
     if (imeiList && Array.isArray(imeiList) && imeiList.length > 0) {
       try {
@@ -140,7 +115,7 @@ export function useGioHangBanHangTaiQuay() {
       if (sanPham.maSKUPhuKien && !sanPham.maSKU) {
         itemMoi.loai = "Phụ kiện";
         console.log(
-          "✅ Thêm sản phẩm: Xác định loại dựa trên maSKUPhuKien: Phụ kiện"
+          " Thêm sản phẩm: Xác định loại dựa trên maSKUPhuKien: Phụ kiện"
         );
       } else if (
         itemMoi.maSKU &&
@@ -157,7 +132,6 @@ export function useGioHangBanHangTaiQuay() {
       }
       gioHang.value.push(itemMoi);
     }
-
     // Cập nhật thành tiền
     capNhatThanhTien();
   }
@@ -196,7 +170,7 @@ export function useGioHangBanHangTaiQuay() {
       item.soLuongMua = item.imeiList.length;
       capNhatThanhTien();
 
-      // ✅ TỰ ĐỘNG LƯU vào localStorage khi cập nhật số lượng theo IMEI
+      // TỰ ĐỘNG LƯU vào localStorage khi cập nhật số lượng theo IMEI
 
       // Emit event để parent component lưu vào localStorage (chỉ khi thực sự có thay đổi)
       if (item.soLuongMua !== soLuongCu) {
@@ -425,7 +399,7 @@ export function useGioHangBanHangTaiQuay() {
       itemMoi.maSKU = null; // Đảm bảo maSKU là null cho phụ kiện
     }
 
-    // ✅ SỬA LỖI: Khi load từ đơn hàng đã lưu, THAY THẾ hoàn toàn thay vì cộng dồn
+    //  SỬA LỖI: Khi load từ đơn hàng đã lưu, THAY THẾ hoàn toàn thay vì cộng dồn
     // Kiểm tra xem sản phẩm đã tồn tại chưa để tránh trùng lặp
     //  SỬA LỖI: Kiểm tra cả maSKU và maSKUPhuKien
     const existingIndex = gioHang.value.findIndex((item) => {

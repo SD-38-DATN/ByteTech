@@ -849,8 +849,8 @@ async function handleTaoDonHangMoi() {
 
   // Lưu vào localStorage
   saveToLocalStorage();
-  // Xóa giỏ hàng hiện tại
-  await xoaToanBoGioHang();
+  // Xóa giỏ hàng hiện tại (KHÔNG cập nhật IMEI vì đã được lưu vào đơn hàng cũ)
+  await xoaToanBoGioHang(true);
   alert(
     "✅ Đã tạo đơn hàng mới!\n\nBạn có thể bắt đầu thêm sản phẩm cho khách hàng mới."
   );
