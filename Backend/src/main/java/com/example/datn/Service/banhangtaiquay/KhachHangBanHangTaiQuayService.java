@@ -18,7 +18,7 @@ public class KhachHangBanHangTaiQuayService {
     // Tìm kiếm khách hàng theo số điện thoại
     public List<KhachHangBanHangTaiQuayDTO> timKiemKhachHangTheoSoDienThoai(String soDienThoai) {
         List<Users> users = usersRepository.findBySoDienThoaiContainingIgnoreCase(soDienThoai);
-        
+
         return users.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -27,7 +27,6 @@ public class KhachHangBanHangTaiQuayService {
     // Lấy tất cả khách hàng
     public List<KhachHangBanHangTaiQuayDTO> getAllKhachHang() {
         List<Users> users = usersRepository.findAll();
-        
         return users.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());

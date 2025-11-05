@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class VoucherBanHangTaiQuayService {
-    
+
     private final VoucherBanHangTaiQuayRepository voucherRepository;
-    
+
     /**
      * Lấy danh sách voucher hợp lệ cho bán hàng tại quầy
      * Điều kiện:
@@ -31,7 +31,7 @@ public class VoucherBanHangTaiQuayService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Lấy danh sách voucher hợp lệ cho bán hàng tại quầy theo tổng tiền đơn hàng
      * Điều kiện:
@@ -46,7 +46,7 @@ public class VoucherBanHangTaiQuayService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Kiểm tra voucher có hợp lệ với đơn hàng không
      * Điều kiện:
@@ -58,72 +58,71 @@ public class VoucherBanHangTaiQuayService {
         try {
             // Kiểm tra voucher có hợp lệ với tổng tiền đơn hàng không
             Voucher voucher = voucherRepository.findValidVoucherByCodeAndAmount(
-                request.getCodeVoucher(), 
-                request.getTongTienDonHang()
+                    request.getCodeVoucher(),
+                    request.getTongTienDonHang()
             ).orElse(null);
-            
+
             if (voucher == null) {
                 return VoucherValidateResponse.error("Voucher không hợp lệ hoặc đơn hàng không đủ điều kiện!");
             }
-            
+
             // Tính toán số tiền giảm
             BigDecimal soTienGiam = calculateDiscount(voucher, request.getTongTienDonHang());
-            
+
             if (soTienGiam.compareTo(BigDecimal.ZERO) <= 0) {
                 return VoucherValidateResponse.error("Không thể tính toán số tiền giảm!");
             }
-            
+
             return VoucherValidateResponse.success(soTienGiam, convertToDTO(voucher));
-            
+
         } catch (Exception e) {
             return VoucherValidateResponse.error("Lỗi khi xử lý voucher: " + e.getMessage());
         }
     }
-    
+
     /**
      * Tính toán số tiền giảm
      */
     private BigDecimal calculateDiscount(Voucher voucher, BigDecimal tongTienDonHang) {
         BigDecimal soTienGiam;
-        
+
         if (voucher.getLoaiGiam() == 1) {
             // Giảm theo phần trăm
-            soTienGiam = tongTienDonHang.multiply(voucher.getGiaTriGiam()).divide(new BigDecimal("100"));
-            
+            soTienGiam = tongTienDonHang.multiply(voucher.getGiaTriGiam());
+
             // Kiểm tra giới hạn tối đa
-            if (voucher.getGiamToiDa() != null && soTienGiam.compareTo(voucher.getGiamToiDa()) > 0) {
+
+            if (voucher.getGiamToiDa() != null && voucher.getGiamToiDa().compareTo(BigDecimal.ZERO) > 0 && soTienGiam.compareTo(voucher.getGiamToiDa()) > 0) {
                 soTienGiam = voucher.getGiamToiDa();
             }
         } else {
             // Giảm theo số tiền cố định
             soTienGiam = voucher.getGiaTriGiam();
         }
-        
         // Đảm bảo số tiền giảm không vượt quá tổng tiền đơn hàng
         if (soTienGiam.compareTo(tongTienDonHang) > 0) {
             soTienGiam = tongTienDonHang;
         }
-        
         return soTienGiam;
     }
-    
+
     /**
      * Convert Voucher entity to DTO
      */
     private VoucherBanHangTaiQuayDTO convertToDTO(Voucher voucher) {
         return new VoucherBanHangTaiQuayDTO(
-            voucher.getId(),
-            voucher.getCodeVoucher(),
-            voucher.getTenVoucher(),
-            voucher.getSoLanSuDung(),
-            voucher.getMoTa(),
-            voucher.getLoaiGiam(),
-            voucher.getGiaTriGiam(),
-            voucher.getDieuKienGiam(),
-            voucher.getGiamToiDa(),
-            voucher.getNgayBatDau(),
-            voucher.getNgayKetThuc(),
-            voucher.getTrangThai()
+                voucher.getId(),
+                voucher.getCodeVoucher(),
+                voucher.getTenVoucher(),
+                voucher.getSoLanSuDung(),
+                voucher.getMoTa(),
+                voucher.getLoaiGiam(),
+                voucher.getGiaTriGiam(),
+                voucher.getDieuKienGiam(),
+                voucher.getGiamToiDa(),
+                voucher.getNgayBatDau(),
+                voucher.getNgayKetThuc(),
+                voucher.getTrangThai()
         );
     }
 }

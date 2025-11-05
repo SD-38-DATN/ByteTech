@@ -6,7 +6,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -44,6 +43,9 @@ public class DonHang {
 
     private String ghiChu;
 
+    @Column(name = "tenNguoiNhan")
+    private String tenNguoiNhan;
+
     @OneToMany(mappedBy = "donHang")
     private List<ChiTietDonHang> chiTietDonHangs;
 
@@ -54,5 +56,5 @@ public class DonHang {
 
     @ManyToOne
     @JoinColumn(name = "userVoucherId")
-    private UserVoucher userVoucher ;
+    private UserVoucher userVoucher;
 }

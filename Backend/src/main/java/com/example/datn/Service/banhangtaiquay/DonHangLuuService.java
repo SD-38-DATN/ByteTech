@@ -1,9 +1,9 @@
-package com.example.datn.Service.BanHangTaiQuay;
+package com.example.datn.Service.banhangtaiquay;
+
 
 import com.example.datn.DTO.banhangtaiquay.DonHangLuuDTO;
 import com.example.datn.Model.DonHang;
 import com.example.datn.Repository.banhangtaiquay.DonHangLuuRepository;
-import com.example.datn.Service.banhangtaiquay.ImeiBanHangTaiQuayService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,20 +31,17 @@ public class DonHangLuuService {
     public List<DonHangLuuDTO> getDonHangLuu(Integer userId) {
 
         List<DonHang> donHangs = donHangLuuRepository.findDonHangLuuWithDetails(userId);
+
         return donHangs.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
     public DonHangLuuDTO getDonHangLuuByMaDonHang(Integer maDonHang) {
-        log.info("Lấy chi tiết đơn hàng đã lưu: {}", maDonHang);
-
         DonHang donHang = donHangLuuRepository.findDonHangLuuByMaDonHang(maDonHang);
-
         if (donHang == null) {
             return null;
         }
-
         return convertToDTO(donHang);
     }
 
@@ -55,7 +52,6 @@ public class DonHangLuuService {
      * @return Long - Số lượng đơn hàng
      */
     public Long countDonHangLuu(Integer userId) {
-        log.info("Đếm số lượng đơn hàng đã lưu cho user: {}", userId);
         return donHangLuuRepository.countDonHangLuuByUser(userId);
     }
 
@@ -66,14 +62,10 @@ public class DonHangLuuService {
      * @return DonHangLuuDTO - DTO
      */
     private DonHangLuuDTO convertToDTO(DonHang donHang) {
-        log.info("Converting DonHang to DTO: maDonHang={}, user={}, tenHienThi={}",
-                donHang.getMaDonHang(),
-                donHang.getUser() != null ? donHang.getUser().getUsername() : "NULL",
-                donHang.getUser() != null ? donHang.getUser().getTenHienThi() : "NULL");
-
         return DonHangLuuDTO.builder()
                 .maDonHang(donHang.getMaDonHang())
                 .soDienThoai(donHang.getSoDienThoai())
+                .tenNguoiNhan(donHang.getTenNguoiNhan()) // ✅ SỬA: Thêm mapping tenNguoiNhan
                 .diaChiGiaoHang(donHang.getDiaChiGiaoHang())
                 .tongTien(donHang.getTongTien())
                 .ngayDat(donHang.getNgayDat())
@@ -159,26 +151,17 @@ public class DonHangLuuService {
                 imeiList.add(chiTiet.getImei().getImei());
             }
         }
-
-
         // Chuyển trạng thái IMEI về 1 (có sẵn)
         if (!imeiList.isEmpty()) {
             try {
                 boolean success = imeiBanHangTaiQuayService.capNhatTrangThaiNhieuImeiVe1(imeiList);
-                if (success) {
-                    log.info("✅ Đã chuyển {} IMEI về trạng thái 1", imeiList.size());
-                } else {
-                    log.warn("⚠️ Không thể chuyển trạng thái IMEI");
-                }
+
             } catch (Exception e) {
-                log.error("Lỗi khi chuyển trạng thái IMEI: {}", e.getMessage());
                 throw new RuntimeException("Lỗi khi chuyển trạng thái IMEI: " + e.getMessage());
             }
         }
-
         // Chuyển trạng thái đơn hàng thành 3 (đã hủy)
         donHang.setTrangThai(3);
-        log.info("Đã chuyển trạng thái đơn hàng {} từ 5 thành 3 (đã hủy)", maDonHang);
     }
 
 }

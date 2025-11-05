@@ -4,8 +4,10 @@ import com.example.datn.DTO.banhangtaiquay.ImeiBanHangTaiQuayDTO;
 import com.example.datn.Model.IMEI;
 import com.example.datn.Repository.banhangtaiquay.IMEIBanHangTaiQuayRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,38 +18,28 @@ public class ImeiBanHangTaiQuayService {
     @Autowired
     private IMEIBanHangTaiQuayRepository imeiRepo;
 
-    // Lấy list IMEI theo mã SKU (có thể filter theo IMEI) - Hỗ trợ cả sản phẩm chính và phụ kiện
+    // Lấy list IMEI theo mã SKU (có thể filter theo IMEI) - Hỗ trợ cả sản phẩm chính và phụ kiện (đã kiểm tra)
     public List<ImeiBanHangTaiQuayDTO> getImeiListBySkuMaBT(String skuMaBT, String imei) {
-        System.out.println("🔍 Service: Tìm IMEI cho SKU: " + skuMaBT + ", IMEI filter: " + imei);
+
         List<Object[]> results = new ArrayList<>();
 
         try {
-            // ✅ THỬ TÌM SẢN PHẨM CHÍNH TRƯỚC
+            //  THỬ TÌM SẢN PHẨM CHÍNH TRƯỚC
             if (imei == null || imei.trim().isEmpty()) {
-                System.out.println("🔍 Service: Gọi findImeisBySkuMaBT với SKU: " + skuMaBT);
                 results = imeiRepo.findImeisBySkuMaBT(skuMaBT);
-                System.out.println("🔍 Service: Kết quả sản phẩm chính từ DB: " + (results != null ? results.size() : "null") + " records");
             } else {
-                System.out.println("🔍 Service: Gọi findImeisBySkuMaBTAndImei với SKU: " + skuMaBT + ", IMEI: " + imei);
                 results = imeiRepo.findImeisBySkuMaBTAndImei(skuMaBT, imei);
-                System.out.println("🔍 Service: Kết quả sản phẩm chính từ DB: " + (results != null ? results.size() : "null") + " records");
             }
-
-            // ✅ NẾU KHÔNG TÌM THẤY SẢN PHẨM CHÍNH, THỬ TÌM PHỤ KIỆN
+            //  NẾU KHÔNG TÌM THẤY SẢN PHẨM CHÍNH, THỬ TÌM PHỤ KIỆN
             if (results.isEmpty()) {
-                System.out.println("🔍 Service: Không tìm thấy sản phẩm chính, thử tìm phụ kiện...");
                 if (imei == null || imei.trim().isEmpty()) {
                     results = imeiRepo.findImeisBySkuPhuKien(skuMaBT);
-                    System.out.println("🔍 Service: Kết quả phụ kiện từ DB: " + (results != null ? results.size() : "null") + " records");
                 } else {
                     // Tìm phụ kiện với filter IMEI
-                    System.out.println("🔍 Service: Tìm phụ kiện với filter IMEI: " + imei);
                     results = imeiRepo.findImeisBySkuPhuKienAndImei(skuMaBT, imei);
-                    System.out.println("🔍 Service: Kết quả phụ kiện với filter từ DB: " + (results != null ? results.size() : "null") + " records");
                 }
             }
         } catch (Exception e) {
-            System.err.println("❌ Service: Lỗi khi tìm IMEI: " + e.getMessage());
             results = new ArrayList<>();
         }
 
@@ -55,7 +47,7 @@ public class ImeiBanHangTaiQuayService {
             ImeiBanHangTaiQuayDTO dto = new ImeiBanHangTaiQuayDTO();
             dto.setId((Integer) obj[0]);
 
-            // ✅ PHÂN BIỆT SẢN PHẨM CHÍNH VÀ PHỤ KIỆN
+            //  PHÂN BIỆT SẢN PHẨM CHÍNH VÀ PHỤ KIỆN
             String skuValue = (String) obj[1];
             if (skuValue.equals(skuMaBT)) {
                 // Nếu SKU khớp với input, có thể là sản phẩm chính hoặc phụ kiện
@@ -67,52 +59,55 @@ public class ImeiBanHangTaiQuayService {
                 dto.setMaSKU(skuValue);
                 dto.setMaSKUPhuKien(skuValue);
             }
-
             dto.setImei((String) obj[2]);
             dto.setTrangThai((Integer) obj[3]);
-            System.out.println("🔍 Service: Tạo DTO - ID: " + dto.getId() + ", SKU: " + dto.getMaSKU() + ", IMEI: " + dto.getImei() + ", Status: " + dto.getTrangThai());
             return dto;
         }).toList();
 
-        System.out.println("🔍 Service: Trả về " + dtos.size() + " IMEI DTOs");
         return dtos;
     }
 
-    // Tìm sản phẩm theo IMEI chính xác
+    // Tìm sản phẩm theo IMEI chính xác (đã kiiem tra)
     public ImeiBanHangTaiQuayDTO timSanPhamTheoImei(String imei) {
-        System.out.println("🔍 Service: timSanPhamTheoImei được gọi với IMEI: " + imei);
+
+        var imeiEntity = imeiRepo.findByImei(imei);
+        if (imeiEntity.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Không tìm thấy sản phẩm với IMEI: " + imei);
+        }
+        imeiEntity = imeiRepo.findByImeiDK(imei);
+
+        if (imeiEntity.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "IMEI này đã được bán, không thể thêm vào giỏ hàng.");
+        }
         List<ImeiBanHangTaiQuayDTO> results = getImeiByExactImei(imei);
-        System.out.println("🔍 Service: getImeiByExactImei trả về " + (results != null ? results.size() : "null") + " results");
 
         if (results.isEmpty()) {
-            System.out.println("❌ Service: Không tìm thấy IMEI: " + imei);
             return null;
         }
 
         ImeiBanHangTaiQuayDTO dto = results.get(0);
-        System.out.println("🔍 Service: DTO - SKU: " + dto.getMaSKU() + ", IMEI: " + dto.getImei() + ", TenSP: " + dto.getTenSanPham());
 
         ImeiBanHangTaiQuayDTO response = new ImeiBanHangTaiQuayDTO();
         response.setImei(dto.getImei());
         response.setTrangThai(dto.getTrangThai());
 
-        // ✅ Xử lý cả sản phẩm chính và phụ kiện
+        //  Xử lý cả sản phẩm chính và phụ kiện
         if (dto.getMaSKU() != null) {
             // Sản phẩm chính
             response.setMaSKU(dto.getMaSKU());
             response.setTenSanPham(dto.getTenSanPham());
-            System.out.println("🔍 Service: Xử lý sản phẩm chính - SKU: " + dto.getMaSKU());
         } else if (dto.getMaSKUPhuKien() != null) {
             // Phụ kiện
             response.setMaSKUPhuKien(dto.getMaSKUPhuKien());
             response.setTenPhuKien(dto.getTenPhuKien());
-            System.out.println("🔍 Service: Xử lý phụ kiện - SKU: " + dto.getMaSKUPhuKien());
         }
 
         // Set thông tin sản phẩm/phụ kiện
         if (dto.getSanPham() != null) {
             response.setSanPham(dto.getSanPham());
-            System.out.println("🔍 Service: Sử dụng sanPham từ DTO");
+
         } else {
             // Tạo object sản phẩm từ thông tin IMEI với dữ liệu đầy đủ
             var sanPhamObject = new Object() {
@@ -124,53 +119,25 @@ public class ImeiBanHangTaiQuayService {
                 public String thuocTinh = "";
                 public Integer soLuong = 1;
             };
-
-            // ✅ LẤY THÔNG TIN ĐẦY ĐỦ TỪ DATABASE
-            try {
-                if (dto.getMaSKU() != null) {
-                    // Sản phẩm chính - lấy thông tin từ BienTheSanPham
-                    System.out.println("🔍 Service: Lấy thông tin sản phẩm chính từ DB cho SKU: " + dto.getMaSKU());
-                    // TODO: Implement logic to get full product info
-                } else if (dto.getMaSKUPhuKien() != null) {
-                    // Phụ kiện - lấy thông tin từ BienThePhuKien
-                    System.out.println("🔍 Service: Lấy thông tin phụ kiện từ DB cho SKU: " + dto.getMaSKUPhuKien());
-                    // TODO: Implement logic to get full accessory info
-                }
-            } catch (Exception e) {
-                System.err.println("❌ Service: Lỗi khi lấy thông tin đầy đủ: " + e.getMessage());
-            }
-
             response.setSanPham(sanPhamObject);
-            System.out.println("🔍 Service: Tạo sanPham object từ DTO với thông tin cơ bản");
         }
-
-        System.out.println("🔍 Service: Trả về ImeiResponseDTO với IMEI: " + response.getImei());
-        System.out.println("🔍 Service: Chi tiết response - maSKU: " + response.getMaSKU() +
-                ", maSKUPhuKien: " + response.getMaSKUPhuKien() +
-                ", tenSanPham: " + response.getTenSanPham() +
-                ", tenPhuKien: " + response.getTenPhuKien() +
-                ", gia: " + (response.getSanPham() != null ? "có object" : "null"));
         return response;
     }
 
     // Lấy IMEI khả dụng theo SKU
     public List<ImeiBanHangTaiQuayDTO> getImeiKhachDung(String maSKU) {
-        System.out.println("🔍 Service: getImeiKhachDung được gọi với SKU: " + maSKU);
         List<ImeiBanHangTaiQuayDTO> result = getImeiListBySkuMaBT(maSKU, null);
-        System.out.println("🔍 Service: getImeiKhachDung trả về " + (result != null ? result.size() : "null") + " items");
         return result;
     }
 
     // Tìm kiếm IMEI chính xác trong toàn bộ hệ thống
     private List<ImeiBanHangTaiQuayDTO> getImeiByExactImei(String imei) {
-        System.out.println("🔍 Service: Tìm kiếm IMEI: " + imei);
+
         // Tìm IMEI entity để lấy thông tin đầy đủ
         var imeiEntity = imeiRepo.findByImei(imei);
         if (imeiEntity.isEmpty()) {
-            System.out.println("❌ Service: Không tìm thấy IMEI: " + imei);
             return new ArrayList<>();
         }
-        System.out.println("✅ Service: Tìm thấy IMEI entity");
 
         IMEI imeiObj = imeiEntity.get();
         ImeiBanHangTaiQuayDTO dto = new ImeiBanHangTaiQuayDTO();
@@ -180,7 +147,7 @@ public class ImeiBanHangTaiQuayService {
         // Lấy thông tin sản phẩm/phụ kiện - xử lý lazy loading
         try {
             if (imeiObj.getBienTheSanPham() != null) {
-                // ✅ Xử lý sản phẩm chính
+                //  Xử lý sản phẩm chính
                 var bienThe = imeiObj.getBienTheSanPham();
                 var sanPham = bienThe.getSanPham();
 
@@ -206,10 +173,9 @@ public class ImeiBanHangTaiQuayService {
                 };
 
                 dto.setSanPham(sanPhamDTO);
-                System.out.println("✅ Service: Xử lý sản phẩm chính - SKU: " + bienThe.getMaSKU());
-                System.out.println("🔍 Service: Chi tiết sản phẩm - Gia: " + bienThe.getGia() + ", ThuocTinh: " + thuocTinhString);
+
             } else if (imeiObj.getBienThePhuKien() != null) {
-                // ✅ Xử lý phụ kiện
+                //  Xử lý phụ kiện
                 var bienThePhuKien = imeiObj.getBienThePhuKien();
                 var phuKien = bienThePhuKien.getPhuKien();
 
@@ -235,9 +201,7 @@ public class ImeiBanHangTaiQuayService {
                     public String thuocTinh = thuocTinhString;
                     public Integer soLuong = 1;
                 };
-
                 dto.setSanPham(phuKienDTO);
-                System.out.println("✅ Service: Xử lý phụ kiện - SKU: " + bienThePhuKien.getMaSKUPhuKien());
             } else {
                 // Xử lý trường hợp không có sản phẩm/phụ kiện
                 dto.setMaSKU("UNKNOWN");
@@ -250,60 +214,41 @@ public class ImeiBanHangTaiQuayService {
                     public String thuocTinh = "";
                     public Integer soLuong = 0;
                 };
-
                 dto.setSanPham(sanPhamDTO);
-                System.out.println("❌ Service: Không tìm thấy sản phẩm/phụ kiện cho IMEI");
             }
         } catch (Exception e) {
             // Xử lý lỗi lazy loading
-            System.err.println("Lỗi khi load relationship: " + e.getMessage());
             dto.setMaSKU("ERROR");
             dto.setTenSanPham("Lỗi khi tải thông tin sản phẩm");
         }
-
         return List.of(dto);
     }
 
-    // Lookup IMEI theo SKU (hỗ trợ cả sản phẩm và phụ kiện)
+    // tim theo  IMEI hoạc SKU (hỗ trợ cả sản phẩm và phụ kiện) hiên tại không dùng đến (hàm getImeiListBySkuMaBT đã có )
     public List<ImeiBanHangTaiQuayDTO> lookupImeisBySku(String sku) {
-        System.out.println("🔍 Service: lookupImeisBySku được gọi với SKU: " + sku);
-
         try {
             // Tìm IMEI theo SKU sản phẩm chính
             List<ImeiBanHangTaiQuayDTO> sanPhamImeis = getImeiListBySkuMaBT(sku, null);
-            System.out.println("🔍 Service: Tìm thấy " + sanPhamImeis.size() + " IMEI cho sản phẩm chính");
 
             if (!sanPhamImeis.isEmpty()) {
                 return sanPhamImeis;
             }
-
-            // Nếu không tìm thấy sản phẩm chính, tìm phụ kiện
-            System.out.println("🔍 Service: Không tìm thấy sản phẩm chính, tìm kiếm phụ kiện");
-
             // Tìm IMEI theo SKU phụ kiện
             List<Object[]> phuKienResults = imeiRepo.findImeisBySkuPhuKien(sku);
-            System.out.println("🔍 Service: Tìm thấy " + (phuKienResults != null ? phuKienResults.size() : "null") + " IMEI cho phụ kiện");
-
             if (phuKienResults != null && !phuKienResults.isEmpty()) {
                 List<ImeiBanHangTaiQuayDTO> phuKienImeis = phuKienResults.stream().map(obj -> {
                     ImeiBanHangTaiQuayDTO dto = new ImeiBanHangTaiQuayDTO();
-                    dto.setId((Integer) obj[0]); // ✅ SỬA: obj[0] là id
-                    dto.setMaSKUPhuKien((String) obj[1]); // ✅ SỬA: obj[1] là maSKUPhuKien
+                    dto.setId((Integer) obj[0]); // SỬA: obj[0] là id
+                    dto.setMaSKUPhuKien((String) obj[1]); //  SỬA: obj[1] là maSKUPhuKien
                     dto.setImei((String) obj[2]); // ✅ SỬA: obj[2] là imei
-                    dto.setTrangThai((Integer) obj[3]); // ✅ SỬA: obj[3] là trangThai
-                    System.out.println("🔍 Service: Tạo DTO phụ kiện - ID: " + dto.getId() + ", SKU: " + dto.getMaSKUPhuKien() + ", IMEI: " + dto.getImei() + ", Status: " + dto.getTrangThai());
+                    dto.setTrangThai((Integer) obj[3]); //  SỬA: obj[3] là trangThai
                     return dto;
                 }).toList();
-
-                System.out.println("✅ Service: Trả về " + phuKienImeis.size() + " IMEI phụ kiện");
                 return phuKienImeis;
             }
-
-            System.out.println("❌ Service: Không tìm thấy IMEI cho SKU: " + sku);
             return new ArrayList<>();
-
         } catch (Exception e) {
-            System.err.println("❌ Service: Lỗi trong lookupImeisBySku: " + e.getMessage());
+
             e.printStackTrace();
             return new ArrayList<>();
         }
@@ -314,18 +259,14 @@ public class ImeiBanHangTaiQuayService {
     // Cập nhật trạng thái một IMEI (tối ưu hóa)
     @Transactional
     public boolean capNhatTrangThaiImei(String imei, int status) {
-        System.out.println("🔄 Service: Cập nhật trạng thái IMEI " + imei + " → " + status);
         try {
             int updated = imeiRepo.capNhatTrangThaiMotImei(imei, status);
             if (updated > 0) {
-                System.out.println("✅ Service: Đã cập nhật IMEI " + imei + " → trạng thái " + status);
                 return true;
             } else {
-                System.out.println("❌ Service: Không tìm thấy IMEI: " + imei);
                 return false;
             }
         } catch (Exception e) {
-            System.err.println("❌ Service: Lỗi cập nhật trạng thái IMEI: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -334,13 +275,11 @@ public class ImeiBanHangTaiQuayService {
     // Cập nhật trạng thái nhiều IMEI cùng lúc (tối ưu hóa)
     @Transactional
     public boolean capNhatTrangThaiNhieuImei(List<String> imeiList, int status) {
-        System.out.println("🔄 Service: Cập nhật trạng thái " + imeiList.size() + " IMEI → " + status);
         try {
             int updated = imeiRepo.capNhatTrangThaiNhieuImei(imeiList, status);
-            System.out.println("✅ Service: Đã cập nhật " + updated + "/" + imeiList.size() + " IMEI → trạng thái " + status);
             return updated > 0;
         } catch (Exception e) {
-            System.err.println("❌ Service: Lỗi cập nhật trạng thái IMEI hàng loạt: " + e.getMessage());
+
             e.printStackTrace();
             return false;
         }

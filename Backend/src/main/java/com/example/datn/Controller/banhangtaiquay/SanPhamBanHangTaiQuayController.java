@@ -1,10 +1,11 @@
 package com.example.datn.Controller.banhangtaiquay;
 
-import com.example.datn.DTO.banhangtaiquay.SanPhamBanHangTaiQuayDTO;
 import com.example.datn.DTO.banhangtaiquay.ImeiBanHangTaiQuayDTO;
-import com.example.datn.Service.banhangtaiquay.SanPhamBanHangTaiQuayService;
+import com.example.datn.DTO.banhangtaiquay.SanPhamBanHangTaiQuayDTO;
 import com.example.datn.Service.banhangtaiquay.ImeiBanHangTaiQuayService;
+import com.example.datn.Service.banhangtaiquay.SanPhamBanHangTaiQuayService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +27,7 @@ public class SanPhamBanHangTaiQuayController {
 
     // Tìm kiếm sản phẩm (hỗ trợ cả SKU và IMEI)
     @GetMapping("/search-sku")
-    public ResponseEntity<List<Object>> searchSanPham(@RequestParam String keyword) {
+    public ResponseEntity<?> searchSanPham(@RequestParam String keyword) {
         System.out.println("🔍 Controller: searchSanPham được gọi với keyword: " + keyword);
         try {
             List<Object> sanPhamList = sanPhamBanHangTaiQuayService.timKiemTheoImeiHoacSKU(keyword);
@@ -35,36 +36,30 @@ public class SanPhamBanHangTaiQuayController {
         } catch (Exception e) {
             System.err.println("❌ Controller: Lỗi trong searchSanPham: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body("Lỗi khi tìm kiếm sản phẩm: " + e.getMessage());
         }
     }
 
-    // ✅ MỚI: Tìm kiếm sản phẩm CHỈ theo SKU (không tìm IMEI)
+    //  Tìm kiếm sản phẩm CHỈ theo SKU (không tìm IMEI) - CÓ XỬ LÝ LỖI (đã kiểm tra)
     @GetMapping("/search-sku-only")
-    public ResponseEntity<List<Object>> searchSanPhamBySKUOnly(@RequestParam String sku) {
-        System.out.println("🔍 Controller: searchSanPhamBySKUOnly được gọi với SKU: " + sku);
+    public ResponseEntity<?> searchSanPhamBySKUOnly(@RequestParam String sku) {
         try {
             List<Object> sanPhamList = sanPhamBanHangTaiQuayService.timKiemSanPhamVaPhuKien(sku);
-            System.out.println("✅ Controller: Trả về " + (sanPhamList != null ? sanPhamList.size() : "null") + " sản phẩm (chỉ SKU)");
-            if (sanPhamList != null && !sanPhamList.isEmpty()) {
-                System.out.println("🔍 Controller: Chi tiết kết quả:");
-                for (int i = 0; i < sanPhamList.size(); i++) {
-                    System.out.println("  - Sản phẩm " + (i+1) + ": " + sanPhamList.get(i));
-                }
-            } else {
-                System.out.println("❌ Controller: Không tìm thấy sản phẩm nào với SKU: " + sku);
+            if (sanPhamList == null || sanPhamList.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Không tìm thấy sản phẩm với mã SKU Nào hợp lệ: " + sku);
             }
             return ResponseEntity.ok(sanPhamList);
         } catch (Exception e) {
-            System.err.println("❌ Controller: Lỗi trong searchSanPhamBySKUOnly: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.internalServerError()
+                    .body("Lỗi hệ thống khi tìm SKU: " + sku);
         }
     }
 
     // Tìm kiếm cả sản phẩm và phụ kiện
     @GetMapping("/search-all")
-    public ResponseEntity<List<Object>> searchSanPhamVaPhuKien(@RequestParam String keyword) {
+    public ResponseEntity<?> searchSanPhamVaPhuKien(@RequestParam String keyword) {
         System.out.println("🔍 Controller: searchSanPhamVaPhuKien được gọi với keyword: " + keyword);
         try {
             List<Object> result = sanPhamBanHangTaiQuayService.timKiemSanPhamVaPhuKien(keyword);
@@ -73,34 +68,52 @@ public class SanPhamBanHangTaiQuayController {
         } catch (Exception e) {
             System.err.println("❌ Controller: Lỗi trong searchSanPhamVaPhuKien: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body("Lỗi khi tìm kiếm sản phẩm: " + e.getMessage());
         }
     }
 
-    // Tìm kiếm kết hợp SKU + IMEI
+    //  Tìm kiếm kết hợp SKU + IMEI - CÓ XỬ LÝ LỖI (đã kiểm tra)
     @GetMapping("/search-combined")
-    public ResponseEntity<List<SanPhamBanHangTaiQuayDTO>> searchCombined(
+    public ResponseEntity<?> searchCombined(
             @RequestParam String sku,
             @RequestParam String imei) {
-        List<SanPhamBanHangTaiQuayDTO> sanPhamList = sanPhamBanHangTaiQuayService.timKiemKetHop(sku, imei);
-        return ResponseEntity.ok(sanPhamList);
+        try {
+            List<SanPhamBanHangTaiQuayDTO> sanPhamList = sanPhamBanHangTaiQuayService.timKiemKetHop(sku, imei);
+
+            if (sanPhamList == null || sanPhamList.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Không tìm thấy sản phẩm  với SKU là : " + sku + " " + " và IMEI : " + imei);
+            }
+
+            return ResponseEntity.ok(sanPhamList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body("Lỗi hệ thống khi tìm kết hợp SKU: " + sku + " và IMEI: " + imei);
+        }
     }
 
     // Lấy list IMEI của sản phẩm theo mã SKU
     @GetMapping("/{maSKU}/imei")
-    public ResponseEntity<List<ImeiBanHangTaiQuayDTO>> getImeiListBySku(@PathVariable String maSKU) {
-        System.out.println("🔍 Controller: API được gọi với SKU: " + maSKU);
-        List<ImeiBanHangTaiQuayDTO> imeiList = imeiBanHangTaiQuayService.getImeiKhachDung(maSKU);
-        System.out.println("🔍 Controller: Trả về " + (imeiList != null ? imeiList.size() : "null") + " IMEI items");
-        return ResponseEntity.ok(imeiList);
+    public ResponseEntity<?> getImeiListBySku(@PathVariable String maSKU) {
+        try {
+            List<ImeiBanHangTaiQuayDTO> imeiList = imeiBanHangTaiQuayService.getImeiKhachDung(maSKU);
+            return ResponseEntity.ok(imeiList);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi lấy danh sách IMEI: " + e.getMessage());
+        }
     }
 
     // Lấy list IMEI của sản phẩm theo mã SKU với filter IMEI
     @GetMapping("/{maSKU}/imei/search")
-    public ResponseEntity<List<ImeiBanHangTaiQuayDTO>> getImeiListBySkuWithFilter(
+    public ResponseEntity<?> getImeiListBySkuWithFilter(
             @PathVariable String maSKU,
             @RequestParam(required = false) String imei) {
-        List<ImeiBanHangTaiQuayDTO> imeiList = imeiBanHangTaiQuayService.getImeiListBySkuMaBT(maSKU, imei);
-        return ResponseEntity.ok(imeiList);
+        try {
+            List<ImeiBanHangTaiQuayDTO> imeiList = imeiBanHangTaiQuayService.getImeiListBySkuMaBT(maSKU, imei);
+            return ResponseEntity.ok(imeiList);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi lấy danh sách IMEI với filter: " + e.getMessage());
+        }
     }
 }

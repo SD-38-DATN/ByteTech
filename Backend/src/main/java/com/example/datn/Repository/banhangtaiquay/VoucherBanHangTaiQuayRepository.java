@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface VoucherBanHangTaiQuayRepository extends JpaRepository<Voucher, Integer> {
-    
+
     /**
      * Lấy danh sách voucher hợp lệ cho bán hàng tại quầy
      * Điều kiện:
@@ -20,12 +20,12 @@ public interface VoucherBanHangTaiQuayRepository extends JpaRepository<Voucher, 
      * 3. dieuKienGiam > 0
      */
     @Query("SELECT v FROM Voucher v WHERE " +
-           "v.trangThai = 1 AND " +
-           "CURRENT_TIMESTAMP BETWEEN v.ngayBatDau AND v.ngayKetThuc AND " +
-           "v.dieuKienGiam > 0 " +
-           "ORDER BY v.ngayBatDau DESC")
+            "v.trangThai = 1 AND " +
+            "CURRENT_TIMESTAMP BETWEEN v.ngayBatDau AND v.ngayKetThuc AND " +
+            "v.dieuKienGiam > 0 " +
+            "ORDER BY v.ngayBatDau DESC")
     List<Voucher> findValidVouchersForBanHangTaiQuay();
-    
+
     /**
      * Tìm voucher theo mã code và kiểm tra điều kiện
      * Điều kiện:
@@ -34,12 +34,12 @@ public interface VoucherBanHangTaiQuayRepository extends JpaRepository<Voucher, 
      * 3. dieuKienGiam > 0
      */
     @Query("SELECT v FROM Voucher v WHERE " +
-           "v.codeVoucher = :codeVoucher AND " +
-           "v.trangThai = 1 AND " +
-           "CURRENT_TIMESTAMP BETWEEN v.ngayBatDau AND v.ngayKetThuc AND " +
-           "v.dieuKienGiam > 0")
+            "v.codeVoucher = :codeVoucher AND " +
+            "v.trangThai = 1 AND " +
+            "CURRENT_TIMESTAMP BETWEEN v.ngayBatDau AND v.ngayKetThuc AND " +
+            "v.dieuKienGiam > 0")
     Optional<Voucher> findValidVoucherByCode(@Param("codeVoucher") String codeVoucher);
-    
+
     /**
      * Lấy danh sách voucher hợp lệ theo tổng tiền đơn hàng
      * Điều kiện:
@@ -49,24 +49,24 @@ public interface VoucherBanHangTaiQuayRepository extends JpaRepository<Voucher, 
      * 4. dieuKienGiam <= tongTienDonHang
      */
     @Query("SELECT v FROM Voucher v WHERE " +
-           "v.trangThai = 1 AND " +
-           "CURRENT_TIMESTAMP BETWEEN v.ngayBatDau AND v.ngayKetThuc AND " +
-           "v.dieuKienGiam > 0 AND " +
-           "v.dieuKienGiam <= :tongTienDonHang " +
-           "ORDER BY v.ngayBatDau DESC")
+            "v.trangThai = 1 AND " +
+            "CURRENT_TIMESTAMP BETWEEN v.ngayBatDau AND v.ngayKetThuc AND " +
+            "v.dieuKienGiam >= 0 AND " +
+            "v.dieuKienGiam <= :tongTienDonHang " +
+            "ORDER BY v.ngayBatDau DESC")
     List<Voucher> findValidVouchersForBanHangTaiQuayByAmount(@Param("tongTienDonHang") java.math.BigDecimal tongTienDonHang);
-    
+
     /**
      * Kiểm tra voucher có hợp lệ với tổng tiền đơn hàng không
      */
     @Query("SELECT v FROM Voucher v WHERE " +
-           "v.codeVoucher = :codeVoucher AND " +
-           "v.trangThai = 1 AND " +
-           "CURRENT_TIMESTAMP BETWEEN v.ngayBatDau AND v.ngayKetThuc AND " +
-           "v.dieuKienGiam > 0 AND " +
-           "v.dieuKienGiam <= :tongTienDonHang")
+            "v.codeVoucher = :codeVoucher AND " +
+            "v.trangThai = 1 AND " +
+            "CURRENT_TIMESTAMP BETWEEN v.ngayBatDau AND v.ngayKetThuc AND " +
+            "v.dieuKienGiam > 0 AND " +
+            "v.dieuKienGiam <= :tongTienDonHang")
     Optional<Voucher> findValidVoucherByCodeAndAmount(
-        @Param("codeVoucher") String codeVoucher, 
-        @Param("tongTienDonHang") java.math.BigDecimal tongTienDonHang
+            @Param("codeVoucher") String codeVoucher,
+            @Param("tongTienDonHang") java.math.BigDecimal tongTienDonHang
     );
 }

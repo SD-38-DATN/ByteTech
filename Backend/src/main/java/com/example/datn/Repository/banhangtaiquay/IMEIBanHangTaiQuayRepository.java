@@ -10,16 +10,28 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-public interface IMEIBanHangTaiQuayRepository extends JpaRepository<IMEI , Integer> {
+public interface IMEIBanHangTaiQuayRepository extends JpaRepository<IMEI, Integer> {
 
     // Tìm IMEI theo số IMEI chính xác (bất kỳ trạng thái nào)
     @Query("SELECT i FROM IMEI i WHERE i.imei = :imei")
     Optional<IMEI> findByImei(String imei);
 
+    // Tìm IMEI theo số IMEI chính xác (có trạng thái la 1)
+    @Query("SELECT i FROM IMEI i WHERE i.imei = :imei AND i.trangThai = 1")
+    Optional<IMEI> findByImeiDK(String imei);
+
+    // ✅ THÊM: Tìm tất cả IMEI theo số IMEI (để xử lý duplicate)
+    @Query("SELECT i FROM IMEI i WHERE i.imei = :imei")
+    List<IMEI> findAllByImei(String imei);
+
+    // ✅ THÊM: Tìm IMEI đầu tiên theo số IMEI (có trạng thái = 1)
+    @Query("SELECT i FROM IMEI i WHERE i.imei = :imei AND i.trangThai = 1 ORDER BY i.id ASC")
+    List<IMEI> findAllByImeiAndTrangThai(String imei);
+
     // Đếm số lượng IMEI theo SKU sản phẩm (chỉ trạng thái = 1)
     @Query("SELECT COUNT(i) FROM IMEI i WHERE i.bienTheSanPham.maSKU = :maSKU AND i.trangThai = 1")
     long countByBienTheSanPham_MaSKU(String maSKU);
-    
+
     // Đếm số lượng IMEI theo SKU phụ kiện (chỉ trạng thái = 1)
     @Query("SELECT COUNT(i) FROM IMEI i WHERE i.bienThePhuKien.maSKUPhuKien = :maSKUPhuKien AND i.trangThai = 1")
     long countByBienThePhuKien_MaSKUPhuKien(String maSKUPhuKien);
@@ -73,13 +85,13 @@ public interface IMEIBanHangTaiQuayRepository extends JpaRepository<IMEI , Integ
     long countBySkuPhuKien(@Param("skuPhuKien") String skuPhuKien);
 
     // ===== BATCH UPDATE METHODS =====
-    
+
     // Cập nhật trạng thái nhiều IMEI cùng lúc (tối ưu hóa)
     @Modifying
     @Transactional
     @Query("UPDATE IMEI i SET i.trangThai = :status WHERE i.imei IN :imeis")
     int capNhatTrangThaiNhieuImei(@Param("imeis") List<String> imeis, @Param("status") int status);
-    
+
     // Cập nhật trạng thái một IMEI
     @Modifying
     @Transactional

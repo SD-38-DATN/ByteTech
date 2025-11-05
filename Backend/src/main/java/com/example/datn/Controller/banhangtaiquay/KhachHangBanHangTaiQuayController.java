@@ -1,4 +1,4 @@
-package com.example.datn.controller.BanHangTaiQuay;
+package com.example.datn.Controller.banhangtaiquay;
 
 import com.example.datn.DTO.banhangtaiquay.KhachHangBanHangTaiQuayDTO;
 import com.example.datn.Service.banhangtaiquay.KhachHangBanHangTaiQuayService;
@@ -20,13 +20,13 @@ public class KhachHangBanHangTaiQuayController {
     @GetMapping("/tim-kiem")
     public ResponseEntity<List<KhachHangBanHangTaiQuayDTO>> timKiemKhachHang(
             @RequestParam("soDienThoai") String soDienThoai) {
-        
+
         List<KhachHangBanHangTaiQuayDTO> khachHangList = khachHangBanHangTaiQuayService.timKiemKhachHangTheoSoDienThoai(soDienThoai);
-        
+
         if (khachHangList == null || khachHangList.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
-        
+
         return ResponseEntity.ok(khachHangList);
     }
 }

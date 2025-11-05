@@ -2,8 +2,8 @@
   <div class="voucher-banhang-container">
     <div class="voucher-header">
       <h5>🎫 Voucher</h5>
-      <button 
-        @click="loadVouchers" 
+      <button
+        @click="loadVouchers"
         class="btn-refresh"
         :disabled="loading"
         title="Làm mới danh sách voucher"
@@ -11,20 +11,20 @@
         🔄
       </button>
     </div>
-    
+
     <div class="voucher-content">
       <!-- Chọn voucher từ combobox -->
       <div class="voucher-field">
         <label class="field-label">Chọn voucher:</label>
-        <select 
-          v-model="selectedVoucher" 
+        <select
+          v-model="selectedVoucher"
           @change="onVoucherChange"
           class="select-field"
           :disabled="loading"
         >
-          <option 
-            v-for="voucher in voucherOptions" 
-            :key="voucher.id" 
+          <option
+            v-for="voucher in voucherOptions"
+            :key="voucher.id"
             :value="voucher.id ? voucher : null"
           >
             {{ voucher.tenVoucher }}
@@ -42,8 +42,8 @@
             class="input-field voucher-input"
             :disabled="loading"
           />
-          <button 
-            @click="apDungVoucher" 
+          <button
+            @click="apDungVoucher"
             class="btn-apply-voucher"
             :disabled="!maVoucher.trim() || loading"
           >
@@ -55,16 +55,18 @@
       <!-- Hiển thị voucher đã áp dụng -->
       <div v-if="voucherApplied" class="voucher-applied">
         <div class="applied-info">
-          <span class="applied-text">✅ Voucher đã áp dụng: {{ appliedVoucher.codeVoucher }}</span>
-          <span class="discount-amount">Giảm: {{ formatCurrency(soTienGiam) }}</span>
+          <span class="applied-text"
+            >✅ Voucher đã áp dụng: {{ appliedVoucher.codeVoucher }}</span
+          >
+          <span class="discount-amount"
+            >Giảm: {{ formatCurrency(soTienGiam) }}</span
+          >
         </div>
         <button @click="xoaVoucher" class="btn-remove-applied">🗑️</button>
       </div>
 
       <!-- Thông báo lỗi -->
-      <div v-if="errorMessage" class="error-message">
-        ❌ {{ errorMessage }}
-      </div>
+      <div v-if="errorMessage" class="error-message">❌ {{ errorMessage }}</div>
 
       <!-- Loading state -->
       <div v-if="loading" class="loading-state">
@@ -75,190 +77,191 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { fetchVouchersForBanHangTaiQuay, fetchVouchersForBanHangTaiQuayByAmount, validateVoucherForBanHang } from '@/service/api'
+import { ref, computed, onMounted, watch } from "vue";
+import {
+  fetchVouchersForBanHangTaiQuay,
+  fetchVouchersForBanHangTaiQuayByAmount,
+  validateVoucherForBanHang,
+} from "@/service/api";
 
 // Props
 const props = defineProps({
   tongTienDonHang: {
     type: Number,
-    default: 0
-  }
-})
+    default: 0,
+  },
+});
 
 // Emits
-const emit = defineEmits(['voucher-applied', 'voucher-removed'])
+const emit = defineEmits(["voucher-applied", "voucher-removed"]);
 
 // Reactive data
-const vouchers = ref([])
-const selectedVoucher = ref(null)
-const maVoucher = ref('')
-const voucherApplied = ref(false)
-const appliedVoucher = ref(null)
-const soTienGiam = ref(0)
-const loading = ref(false)
-const errorMessage = ref('')
+const vouchers = ref([]);
+const selectedVoucher = ref(null);
+const maVoucher = ref("");
+const voucherApplied = ref(false);
+const appliedVoucher = ref(null);
+const soTienGiam = ref(0);
+const loading = ref(false);
+const errorMessage = ref("");
 
 // Computed
 const canApplyVoucher = computed(() => {
-  if (!maVoucher.value.trim()) return false
-  if (voucherApplied.value) return false
-  return true
-})
+  if (!maVoucher.value.trim()) return false;
+  if (voucherApplied.value) return false;
+  return true;
+});
 
 // Computed để đảm bảo combobox luôn có option "-- Chọn voucher --"
 const voucherOptions = computed(() => {
-  return [
-    { id: '', tenVoucher: '-- Chọn voucher --' },
-    ...vouchers.value
-  ]
-})
+  return [{ id: "", tenVoucher: "-- Chọn voucher --" }, ...vouchers.value];
+});
 
 // Methods
 async function loadVouchers() {
-  loading.value = true
-  errorMessage.value = ''
-  
+  loading.value = true;
+  errorMessage.value = "";
+
   try {
     // Sử dụng API mới với điều kiện tổng tiền đơn hàng
-    const data = await fetchVouchersForBanHangTaiQuayByAmount(props.tongTienDonHang)
-    vouchers.value = data
-    
+    const data = await fetchVouchersForBanHangTaiQuayByAmount(
+      props.tongTienDonHang
+    );
+    vouchers.value = data;
+
     // Reset combobox về "-- Chọn voucher --" khi load lại
-    selectedVoucher.value = null
-    
-    console.log('✅ Đã tải danh sách voucher theo điều kiện:', data)
+    selectedVoucher.value = null;
   } catch (error) {
-    console.error('❌ Lỗi khi tải voucher:', error)
-    errorMessage.value = 'Không thể tải danh sách voucher. Vui lòng thử lại.'
+    console.error("❌ Lỗi khi tải voucher:", error);
+    errorMessage.value = "Không thể tải danh sách voucher. Vui lòng thử lại.";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function onVoucherChange() {
   if (selectedVoucher.value) {
-    maVoucher.value = selectedVoucher.value.codeVoucher
-    console.log('🎫 Đã chọn voucher:', selectedVoucher.value)
+    maVoucher.value = selectedVoucher.value.codeVoucher;
   } else {
-    maVoucher.value = ''
+    maVoucher.value = "";
   }
 }
 
 async function apDungVoucher() {
   if (!maVoucher.value.trim()) {
-    errorMessage.value = 'Vui lòng nhập mã voucher!'
-    return
+    errorMessage.value = "Vui lòng nhập mã voucher!";
+    return;
   }
 
-  loading.value = true
-  errorMessage.value = ''
+  loading.value = true;
+  errorMessage.value = "";
 
   try {
     const result = await validateVoucherForBanHang(
-      maVoucher.value.trim(), 
+      maVoucher.value.trim(),
       props.tongTienDonHang
-    )
-    
+    );
+
     if (result.success) {
-      appliedVoucher.value = result.voucher || { codeVoucher: maVoucher.value.trim() }
-      soTienGiam.value = result.soTienGiam
-      voucherApplied.value = true
-      
+      appliedVoucher.value = result.voucher || {
+        codeVoucher: maVoucher.value.trim(),
+      };
+      soTienGiam.value = result.soTienGiam;
+      voucherApplied.value = true;
+
       // Emit event to parent
-      emit('voucher-applied', {
+      emit("voucher-applied", {
         voucher: appliedVoucher.value,
-        soTienGiam: result.soTienGiam
-      })
-      
-      console.log('✅ Voucher đã được áp dụng:', result)
+        soTienGiam: result.soTienGiam,
+      });
     } else {
-      errorMessage.value = result.message || 'Voucher không hợp lệ!'
+      errorMessage.value = result.message || "Voucher không hợp lệ!";
     }
   } catch (error) {
-    console.error('❌ Lỗi khi áp dụng voucher:', error)
-    errorMessage.value = 'Không thể áp dụng voucher. Vui lòng thử lại.'
+    errorMessage.value = "Không thể áp dụng voucher. Vui lòng thử lại.";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function xoaVoucher() {
-  clearVoucher()
-  errorMessage.value = ''
-  console.log('🗑️ Đã xóa voucher')
+  clearVoucher();
+  errorMessage.value = "";
 }
 
 function formatCurrency(value) {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(value || 0)
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(value || 0);
 }
 
 function formatVoucherValue(voucher) {
   if (voucher.loaiGiam === 1) {
-    return `${voucher.giaTriGiam}%`
+    return `${voucher.giaTriGiam}%`;
   } else {
-    return formatCurrency(voucher.giaTriGiam)
+    return formatCurrency(voucher.giaTriGiam);
   }
 }
 
 // Watch tongTienDonHang để load lại voucher khi thay đổi
-watch(() => props.tongTienDonHang, (newValue, oldValue) => {
-  errorMessage.value = ''
-  
-  // Tự động load lại voucher khi tổng tiền đơn hàng thay đổi
-  if (newValue > 0) {
-    loadVouchers()
-    
-    // Kiểm tra voucher hiện tại có còn hợp lệ không
-    if (voucherApplied.value && appliedVoucher.value) {
-      checkCurrentVoucherValidity(newValue)
+watch(
+  () => props.tongTienDonHang,
+  (newValue, oldValue) => {
+    errorMessage.value = "";
+
+    // Tự động load lại voucher khi tổng tiền đơn hàng thay đổi
+    if (newValue > 0) {
+      loadVouchers();
+
+      // Kiểm tra voucher hiện tại có còn hợp lệ không
+      if (voucherApplied.value && appliedVoucher.value) {
+        checkCurrentVoucherValidity(newValue);
+      }
+    } else if (newValue === 0 && oldValue > 0) {
+      // Khi giỏ hàng trống, xóa voucher đã chọn và load lại
+      clearVoucher();
     }
-  } else if (newValue === 0 && oldValue > 0) {
-    // Khi giỏ hàng trống, xóa voucher đã chọn và load lại
-    clearVoucher()
   }
-})
+);
 
 // Kiểm tra voucher hiện tại có còn hợp lệ không
 async function checkCurrentVoucherValidity(tongTienDonHang) {
-  if (!appliedVoucher.value) return
-  
+  if (!appliedVoucher.value) return;
+
   try {
     const result = await validateVoucherForBanHang(
-      appliedVoucher.value.codeVoucher, 
+      appliedVoucher.value.codeVoucher,
       tongTienDonHang
-    )
-    
+    );
+
     if (!result.success) {
       // Voucher không còn hợp lệ, xóa voucher
-      clearVoucher()
-      errorMessage.value = 'Voucher không còn hợp lệ với đơn hàng hiện tại'
+      clearVoucher();
+      errorMessage.value = "Voucher không còn hợp lệ với đơn hàng hiện tại";
     }
   } catch (error) {
-    console.error('❌ Lỗi khi kiểm tra voucher:', error)
+    console.error("❌ Lỗi khi kiểm tra voucher:", error);
   }
 }
 
 // Xóa voucher và reset state
 function clearVoucher() {
-  selectedVoucher.value = null
-  maVoucher.value = ''
-  voucherApplied.value = false
-  appliedVoucher.value = null
-  soTienGiam.value = 0
+  selectedVoucher.value = null;
+  maVoucher.value = "";
+  voucherApplied.value = false;
+  appliedVoucher.value = null;
+  soTienGiam.value = 0;
   // Không xóa vouchers.value để giữ danh sách voucher
-  
+
   // Emit event để parent cập nhật
-  emit('voucher-removed')
+  emit("voucher-removed");
 }
 
 // Lifecycle
 onMounted(() => {
-  loadVouchers()
-})
+  loadVouchers();
+});
 </script>
 
 <style scoped>
@@ -305,11 +308,6 @@ onMounted(() => {
   cursor: not-allowed;
   opacity: 0.6;
 }
-
-.voucher-content {
-  space-y: 12px;
-}
-
 .voucher-field {
   margin-bottom: 12px;
 }
@@ -381,7 +379,6 @@ onMounted(() => {
   cursor: not-allowed;
   opacity: 0.6;
 }
-
 
 .voucher-applied {
   background: #d4edda;

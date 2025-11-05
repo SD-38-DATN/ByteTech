@@ -1,5 +1,3 @@
-
-
 import axios from "axios";
 
 // ==================== Khởi tạo axios ====================
@@ -56,7 +54,12 @@ export function validateToken() {
   let token = localStorage.getItem("token");
 
   // Nếu không có token hoặc token null/undefined/chuỗi rỗng -> xoá hết
-  if (!token || token.trim() === "" || token === "null" || token === "undefined") {
+  if (
+    !token ||
+    token.trim() === "" ||
+    token === "null" ||
+    token === "undefined"
+  ) {
     localStorage.clear();
     return null;
   }
@@ -67,7 +70,9 @@ export function validateToken() {
 
     // Nếu decode lỗi hoặc đã hết hạn -> xoá hết
     if (!decoded || !decoded.exp || decoded.exp < now) {
-      console.warn("[AUTH] Token hết hạn hoặc không hợp lệ, xoá toàn bộ localStorage");
+      console.warn(
+        "[AUTH] Token hết hạn hoặc không hợp lệ, xoá toàn bộ localStorage"
+      );
       localStorage.clear();
       return null;
     }
@@ -75,7 +80,7 @@ export function validateToken() {
     // Kiểm tra quá 10 tiếng từ lúc login
     const loginTime = localStorage.getItem("loginTime");
     const TEN_HOURS = 10 * 60 * 60 * 1000;
-    if (loginTime && (Date.now() - parseInt(loginTime, 10)) > TEN_HOURS) {
+    if (loginTime && Date.now() - parseInt(loginTime, 10) > TEN_HOURS) {
       console.warn("[AUTH] Đăng nhập quá 10 tiếng, xoá toàn bộ localStorage");
       localStorage.clear();
       return null;
@@ -90,7 +95,6 @@ export function validateToken() {
   }
 }
 
-
 // ==================== Interceptors ====================
 api.interceptors.request.use(
   (config) => {
@@ -100,45 +104,43 @@ api.interceptors.request.use(
     const token = validateToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.info('[AUTH] Using token:', token);
+      console.info("[AUTH] Using token:", token);
     } else {
       delete config.headers.Authorization;
-      console.info('[AUTH] No token found');
+      console.info("[AUTH] No token found");
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-
 // ==================== Tự động Đăng xuất khi không hoạt động ====================
 // Giá trị cũ: 3600000 (tương đương 1 giờ)
 
 // Giá trị mới: 1800000 (tương đương 30 phút)
 let idleTimer = null;
-const IDLE_TIMEOUT =  1800000; // 1 giờ = 60 * 60 * 1000 ms
+const IDLE_TIMEOUT = 1800000; // 1 giờ = 60 * 60 * 1000 ms
 
 // Hành động sẽ thực hiện khi hết giờ
 const handleIdleLogout = async () => {
   // Chỉ logout nếu có token (người dùng đang đăng nhập)
   if (localStorage.getItem("token")) {
-      console.warn("[IDLE] Người dùng không hoạt động, tự động đăng xuất.");
-      alert("Bạn đã không hoạt động trong một thời gian dài và sẽ được tự động đăng xuất.");
-      
-      try {
-        await logoutApi(); // Gọi API để vô hiệu hóa token ở backend
-      } catch (error) {
-        console.error("Lỗi khi gọi API logout:", error);
-      } finally {
-        localStorage.removeItem("token"); // Xóa token ở client
-        localStorage.clear(); // Xóa toàn bộ localStorage
-        window.location.href = '/login'; // Chuyển hướng về trang đăng nhập
-      }
+    console.warn("[IDLE] Người dùng không hoạt động, tự động đăng xuất.");
+    alert(
+      "Bạn đã không hoạt động trong một thời gian dài và sẽ được tự động đăng xuất."
+    );
+
+    try {
+      await logoutApi(); // Gọi API để vô hiệu hóa token ở backend
+    } catch (error) {
+      console.error("Lỗi khi gọi API logout:", error);
+    } finally {
+      localStorage.removeItem("token"); // Xóa token ở client
+      localStorage.clear(); // Xóa toàn bộ localStorage
+      window.location.href = "/login"; // Chuyển hướng về trang đăng nhập
+    }
   }
 };
-
-
-
 
 // Reset bộ đếm thời gian
 const resetIdleTimer = () => {
@@ -146,16 +148,14 @@ const resetIdleTimer = () => {
   idleTimer = setTimeout(handleIdleLogout, IDLE_TIMEOUT);
 };
 
-
-
 // Bắt đầu theo dõi hoạt động của người dùng
 export const startIdleTimer = () => {
   // Lắng nghe các sự kiện hoạt động trên toàn trang
-  const events = ['mousemove', 'keydown', 'click', 'scroll'];
-  events.forEach(event => {
+  const events = ["mousemove", "keydown", "click", "scroll"];
+  events.forEach((event) => {
     window.addEventListener(event, resetIdleTimer, true);
   });
-  
+
   // Khởi động bộ đếm lần đầu
   resetIdleTimer();
   console.log("[IDLE] Bắt đầu theo dõi không hoạt động.");
@@ -163,14 +163,13 @@ export const startIdleTimer = () => {
 
 // Dọn dẹp
 export const stopIdleTimer = () => {
-    clearTimeout(idleTimer);
-    const events = ['mousemove', 'keydown', 'click', 'scroll'];
-    events.forEach(event => {
-      window.removeEventListener(event, resetIdleTimer, true);
-    });
-    console.log("[IDLE] Dừng theo dõi không hoạt động.");
+  clearTimeout(idleTimer);
+  const events = ["mousemove", "keydown", "click", "scroll"];
+  events.forEach((event) => {
+    window.removeEventListener(event, resetIdleTimer, true);
+  });
+  console.log("[IDLE] Dừng theo dõi không hoạt động.");
 };
-
 
 // ======= Auth =======
 // Hàm này được gọi bởi handleIdleLogout ở trên
@@ -210,7 +209,6 @@ export const loginApi = async (credentials) => {
 //   return null;
 // };
 
-
 export const handleGoogleCallback = () => {
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
@@ -223,31 +221,27 @@ export const handleGoogleCallback = () => {
   return null;
 };
 
-
 // ======= Danh Mục =======
 export const fetchDanhMuc = async () => {
   const res = await api.get("/danh-muc");
   return res.data;
 };
 
-
-
 // ======= Danh Mục Phụ Kiện =======
 export const fetchDanhMucPhuKien = async () => {
   // Thay đổi endpoint API
-  const res = await api.get("/danh-muc-phu-kien"); 
+  const res = await api.get("/danh-muc-phu-kien");
   return res.data;
 };
 
 export const getPhuKienByDanhMuc = async (maDanhMucPhuKien) => {
-  const res = await api.get(`/phu-kien/by-danh-muc/${maDanhMucPhuKien}`); 
+  const res = await api.get(`/phu-kien/by-danh-muc/${maDanhMucPhuKien}`);
   return res.data; // ✅ ĐÃ TRẢ VỀ DỮ LIỆU JSON TRỰC TIẾP
 };
 
-
 // ======= Products =======
 export const fetchProducts = async () => {
-  const res = await api.get("/"); 
+  const res = await api.get("/");
   return res.data;
 };
 
@@ -259,10 +253,9 @@ export const getDanhMuc = (maDanhMuc) => {
 
 export const searchSanPham = (tenSanPham) => {
   return api.get(`/sanpham/search`, {
-    params: { tenSanPham }
+    params: { tenSanPham },
   });
 };
-
 
 export const SanPhamChiTiet = (id) => api.get(`/sanpham/${id}`);
 
@@ -295,7 +288,6 @@ export const getCurrentUser = async () => {
   const res = await api.get("/users/me");
   return res.data;
 };
-
 
 // =========gio hang==============
 export const fetchCart = async () => {
@@ -330,7 +322,6 @@ export const createOrder = async (order) => {
   return res.data;
 };
 
-
 // ===========voucher===========
 export const fetchMyVouchers = async () => {
   const res = await api.get("/voucher/me");
@@ -343,23 +334,15 @@ export const fetchActiveVouchers = async () => {
 };
 
 export const addUserVoucher = async (codeVoucher) => {
- 
   // Body request là một object có key là "codeVoucher"
   const response = await api.post("/user-vouchers/add", { codeVoucher });
   return response.data; // Trả về message từ server { message: "..." } hoặc { error: "..." }
 };
 
-
-
 export const Voucherforme = async () => {
   const res = await api.get("/voucher/my-vouchers"); // ✅ đúng với controller bạn gửi
   return res.data;
 };
-
-
-
-
-
 
 // =========== feedback ===========
 export const fetchFeedbackBySanPham = async (maSanPham) => {
@@ -426,32 +409,24 @@ export const deleteFeedbackPhuKien = async (feedbackId) => {
 
 // truy van don hang
 export const fetchMyPendingOrders = async () => {
-    const response = await api.get("/donhang/me/cho-xac-nhan");
-    return response.data; // Trả về mảng DonHangResponseDTO
+  const response = await api.get("/donhang/me/cho-xac-nhan");
+  return response.data; // Trả về mảng DonHangResponseDTO
 };
 
 export const xacNhanDonHang = async (maDonHang, items) => {
-    const response = await api.put(`/donhang/${maDonHang}/xac-nhan`, { items });
-    return response.data; // Trả về chuỗi "Đơn hàng #... đã được xác nhận..."
+  const response = await api.put(`/donhang/${maDonHang}/xac-nhan`, { items });
+  return response.data; // Trả về chuỗi "Đơn hàng #... đã được xác nhận..."
 };
-
-
-
-
 
 export const getAllPhuKien = () => api.get("/phu-kien");
 
 // Lấy chi tiết phụ kiện theo id
 export const PhuKienChiTiet = (id) => api.get(`/phu-kien/${id}`);
 
-
-
 // Login bằng Google (Spring Security OAuth2)
 export const loginWithGoogle = () => {
   window.location.href = "http://localhost:8081/oauth2/authorization/google";
 };
-
-
 
 // ========== Sản phẩm liên quan ==========
 export const fetchSanPhamLienQuan = async (id) => {
@@ -459,13 +434,7 @@ export const fetchSanPhamLienQuan = async (id) => {
   return res.data;
 };
 
-
-
-
-
-
 //===================CRUD san pham======
-
 
 // ==================== CRUD Sản phẩm (Admin) ====================
 
@@ -483,9 +452,6 @@ export const fetchSanPhamLienQuan = async (id) => {
 // export const createThuocTinh = async (sku, data) => (await api.post(`/admin/bienthe/${sku}/thuoctinh`, data)).data;
 // export const updateThuocTinh = async (id, data) => (await api.put(`/admin/thuoctinh/${id}`, data)).data;
 
-
-
-
 //================================================================================
 //== BẮT ĐẦU PHẦN CẬP NHẬT CHO CRUD SẢN PHẨM ADMIN
 //================================================================================
@@ -495,8 +461,8 @@ export const fetchSanPhamLienQuan = async (id) => {
  * @returns {Promise<any>}
  */
 export const fetchAllAdminProducts = async () => {
-    // ✅ ĐÃ SỬA LẠI ĐƯỜNG DẪN: từ /admin/dto -> /admin/products
-    return (await api.get("/admin/products")).data;
+  // ✅ ĐÃ SỬA LẠI ĐƯỜNG DẪN: từ /admin/dto -> /admin/products
+  return (await api.get("/admin/products")).data;
 };
 
 /**
@@ -505,8 +471,8 @@ export const fetchAllAdminProducts = async () => {
  * @returns {Promise<any>}
  */
 export const createAdminProduct = async (productData) => {
-    // ✅ ĐÃ SỬA LẠI ĐƯỜNG DẪN: từ /admin/sanpham -> /admin/products
-    return (await api.post("/admin/products", productData)).data;
+  // ✅ ĐÃ SỬA LẠI ĐƯỜNG DẪN: từ /admin/sanpham -> /admin/products
+  return (await api.post("/admin/products", productData)).data;
 };
 
 /**
@@ -516,8 +482,8 @@ export const createAdminProduct = async (productData) => {
  * @returns {Promise<any>}
  */
 export const updateAdminProduct = async (id, productData) => {
-    // ✅ ĐÃ SỬA LẠI ĐƯỜNG DẪN: từ /admin/sanpham/{id} -> /admin/products/{id}
-    return (await api.put(`/admin/products/${id}`, productData)).data;
+  // ✅ ĐÃ SỬA LẠI ĐƯỜNG DẪN: từ /admin/sanpham/{id} -> /admin/products/{id}
+  return (await api.put(`/admin/products/${id}`, productData)).data;
 };
 
 /**
@@ -526,8 +492,8 @@ export const updateAdminProduct = async (id, productData) => {
  * @returns {Promise<any>}
  */
 export const deleteAdminProduct = async (id) => {
-    // ✅ ĐÃ SỬA LẠI ĐƯỜNG DẪN: từ /admin/{id} -> /admin/products/{id}
-    return (await api.delete(`/admin/products/${id}`)).data;
+  // ✅ ĐÃ SỬA LẠI ĐƯỜNG DẪN: từ /admin/{id} -> /admin/products/{id}
+  return (await api.delete(`/admin/products/${id}`)).data;
 };
 
 /**
@@ -536,7 +502,7 @@ export const deleteAdminProduct = async (id) => {
  * @returns {Promise<any>}
  */
 export const deleteAdminVariant = async (sku) => {
-    return (await api.delete(`/admin/products/variants/${sku}`)).data;
+  return (await api.delete(`/admin/products/variants/${sku}`)).data;
 };
 
 /**
@@ -545,7 +511,7 @@ export const deleteAdminVariant = async (sku) => {
  * @returns {Promise<any>}
  */
 export const deleteAdminAttribute = async (id) => {
-    return (await api.delete(`/admin/products/attributes/${id}`)).data;
+  return (await api.delete(`/admin/products/attributes/${id}`)).data;
 };
 
 // ❌ CÁC HÀM CŨ NÀY ĐÃ ĐƯỢC LOẠI BỎ VÌ LOGIC ĐÃ GỘP VÀO create/updateAdminProduct
@@ -554,85 +520,96 @@ export const deleteAdminAttribute = async (id) => {
 // export const createThuocTinh = async (sku, data) => (await api.post(`/admin/bienthe/${sku}/thuoctinh`, data)).data;
 // export const updateThuocTinh = async (id, data) => (await api.put(`/admin/thuoctinh/${id}`, data)).data;
 
-
-
 //... trong file src/service/api.js
 
 // ================== IMEI API ==================
-export const fetchAllImeis = () => api.get('/admin/imeis').then(res => res.data);
-export const createImei = (payload) => api.post('/admin/imeis', payload).then(res => res.data);
-export const updateImei = (id, payload) => api.put(`/admin/imeis/${id}`, payload).then(res => res.data);
+export const fetchAllImeis = () =>
+  api.get("/admin/imeis").then((res) => res.data);
+export const createImei = (payload) =>
+  api.post("/admin/imeis", payload).then((res) => res.data);
+export const updateImei = (id, payload) =>
+  api.put(`/admin/imeis/${id}`, payload).then((res) => res.data);
 export const deleteImei = (id) => api.delete(`/admin/imeis/${id}`);
 
 // Hàm để lấy danh sách SKU gợi ý
-export const fetchAllProductVariants = () => api.get('/admin/products/variants-summary').then(res => res.data);
+export const fetchAllProductVariants = () =>
+  api.get("/admin/products/variants-summary").then((res) => res.data);
 // (Bạn cần tạo endpoint này ở backend để trả về list {sku, tenSanPham})
-
-
 
 // ... trong file api.js
 
 // ================== THÔNG SỐ KỸ THUẬT API ==================
-export const fetchThongSoForSanPham = (maSanPham) => api.get(`/admin/sanpham/${maSanPham}/thongso`).then(res => res.data);
-export const fetchAvailableLoaiThongSo = (maSanPham) => api.get(`/admin/sanpham/${maSanPham}/available-loai-thongso`).then(res => res.data);
-export const createThongSo = (maSanPham, payload) => api.post(`/admin/sanpham/${maSanPham}/thongso`, payload);
-export const updateThongSo = (maThongSo, payload) => api.put(`/admin/thongso/${maThongSo}`, payload);
-export const deleteThongSo = (maThongSo) => api.delete(`/admin/thongso/${maThongSo}`);
+export const fetchThongSoForSanPham = (maSanPham) =>
+  api.get(`/admin/sanpham/${maSanPham}/thongso`).then((res) => res.data);
+export const fetchAvailableLoaiThongSo = (maSanPham) =>
+  api
+    .get(`/admin/sanpham/${maSanPham}/available-loai-thongso`)
+    .then((res) => res.data);
+export const createThongSo = (maSanPham, payload) =>
+  api.post(`/admin/sanpham/${maSanPham}/thongso`, payload);
+export const updateThongSo = (maThongSo, payload) =>
+  api.put(`/admin/thongso/${maThongSo}`, payload);
+export const deleteThongSo = (maThongSo) =>
+  api.delete(`/admin/thongso/${maThongSo}`);
 
 // ... trong file api.js
 
 // ================== LOẠI THÔNG SỐ API ==================
-export const fetchAllLoaiThongSo = () => api.get('/admin/loai-thongso').then(res => res.data);
-export const createLoaiThongSo = (payload) => api.post('/admin/loai-thongso', payload);
-export const updateLoaiThongSo = (id, payload) => api.put(`/admin/loai-thongso/${id}`, payload);
-export const deleteLoaiThongSo = (id) => api.delete(`/admin/loai-thongso/${id}`);
+export const fetchAllLoaiThongSo = () =>
+  api.get("/admin/loai-thongso").then((res) => res.data);
+export const createLoaiThongSo = (payload) =>
+  api.post("/admin/loai-thongso", payload);
+export const updateLoaiThongSo = (id, payload) =>
+  api.put(`/admin/loai-thongso/${id}`, payload);
+export const deleteLoaiThongSo = (id) =>
+  api.delete(`/admin/loai-thongso/${id}`);
 
 // Giả sử bạn đã có API để lấy danh mục
-export const fetchAllDanhMucs = () => api.get('/admin/danhmuc').then(res => res.data);
-
-
-
+export const fetchAllDanhMucs = () =>
+  api.get("/admin/danhmuc").then((res) => res.data);
 
 // ✅ HÀM MỚI (để tạo/sửa loại TS cho Phụ kiện)
-export const createLoaiThongSoPhuKien = (payload) => api.post('/admin/loai-thongso-phukien', payload);
-export const updateLoaiThongSoPhuKien = (id, payload) => api.put(`/admin/loai-thongso-phukien/${id}`, payload);
+export const createLoaiThongSoPhuKien = (payload) =>
+  api.post("/admin/loai-thongso-phukien", payload);
+export const updateLoaiThongSoPhuKien = (id, payload) =>
+  api.put(`/admin/loai-thongso-phukien/${id}`, payload);
 // Dùng lại deleteLoaiThongSo
 // export const deleteLoaiThongSo = (id) => api.delete(`/admin/loai-thongso/${id}`);
 
 // ✅ HÀM MỚI (để lấy tất cả Phụ kiện đang hoạt động)
 export const fetchAllActivePhuKien = async () => {
-    // Giả định bạn có endpoint này để lấy Phụ kiện có maDanhMucPhuKien
-    return (await api.get("/phu-kien/active-all")).data;
+  // Giả định bạn có endpoint này để lấy Phụ kiện có maDanhMucPhuKien
+  return (await api.get("/phu-kien/active-all")).data;
 };
-
 
 // ==================== CRUD Khuyến Mại (Admin) ====================
 
 export const fetchAllKhuyenMai = () => {
-    return api.get("/khuyenmai").then(res => res.data);
+  return api.get("/khuyenmai").then((res) => res.data);
 };
 
 export const createKhuyenMai = (khuyenMaiData) => {
-    return api.post("/khuyenmai", khuyenMaiData).then(res => res.data);
+  return api.post("/khuyenmai", khuyenMaiData).then((res) => res.data);
 };
 
 export const updateKhuyenMai = (id, khuyenMaiData) => {
-    return api.put(`/khuyenmai/${id}`, khuyenMaiData).then(res => res.data);
+  return api.put(`/khuyenmai/${id}`, khuyenMaiData).then((res) => res.data);
 };
 
 export const deleteKhuyenMai = (id) => {
-    return api.delete(`/khuyenmai/${id}`);
+  return api.delete(`/khuyenmai/${id}`);
 };
 
 export const fetchAppliedVariantsForKhuyenMai = (khuyenMaiId) => {
-    return api.get(`/khuyenmai/${khuyenMaiId}/applied-variants`).then(res => res.data);
+  return api
+    .get(`/khuyenmai/${khuyenMaiId}/applied-variants`)
+    .then((res) => res.data);
 };
 
 // Cập nhật danh sách SKU áp dụng cho một Khuyến Mãi
 export const applyKhuyenMaiToVariants = (khuyenMaiId, skuList) => {
-    return api.put(`/khuyenmai/${khuyenMaiId}/apply-to-variants`, skuList);
+  return api.put(`/khuyenmai/${khuyenMaiId}/apply-to-variants`, skuList);
 };
-
 
 // ==================== Bán Hàng Tại Quầy API ====================
 
@@ -647,7 +624,7 @@ export const applyKhuyenMaiToVariants = (khuyenMaiId, skuList) => {
  * @returns {Promise<Object>} Kết quả từ server
  */
 export const updateImeiStatus = async (data) => {
-  const res = await api.put('/banhangtaiquay/imei/update-status', data);
+  const res = await api.put("/banhangtaiquay/imei/update-status", data);
   return res.data;
 };
 
@@ -657,7 +634,7 @@ export const updateImeiStatus = async (data) => {
  * @returns {Promise<Object>} Kết quả từ server
  */
 export const setImeiToStock = async (imeiOrList) => {
-  const data = Array.isArray(imeiOrList) 
+  const data = Array.isArray(imeiOrList)
     ? { imeiList: imeiOrList, status: 1 }
     : { imei: imeiOrList, status: 1 };
   return await updateImeiStatus(data);
@@ -669,7 +646,7 @@ export const setImeiToStock = async (imeiOrList) => {
  * @returns {Promise<Object>} Kết quả từ server
  */
 export const setImeiToCart = async (imeiOrList) => {
-  const data = Array.isArray(imeiOrList) 
+  const data = Array.isArray(imeiOrList)
     ? { imeiList: imeiOrList, status: 5 }
     : { imei: imeiOrList, status: 5 };
   return await updateImeiStatus(data);
@@ -681,7 +658,7 @@ export const setImeiToCart = async (imeiOrList) => {
  * @returns {Promise<Object>} Kết quả từ server
  */
 export const setImeiToSold = async (imeiOrList) => {
-  const data = Array.isArray(imeiOrList) 
+  const data = Array.isArray(imeiOrList)
     ? { imeiList: imeiOrList, status: 0 }
     : { imei: imeiOrList, status: 0 };
   return await updateImeiStatus(data);
@@ -695,8 +672,8 @@ export const setImeiToSold = async (imeiOrList) => {
  * @returns {Promise<Array>} Danh sách khách hàng tìm được
  */
 export const searchCustomer = async (phone) => {
-  const res = await api.get('/admin/ban-hang-tai-quay/khach-hang/tim-kiem', {
-    params: { soDienThoai: phone }
+  const res = await api.get("/admin/ban-hang-tai-quay/khach-hang/tim-kiem", {
+    params: { soDienThoai: phone },
   });
   return res.data;
 };
@@ -708,27 +685,28 @@ export const searchCustomer = async (phone) => {
  * @param {string} sku - SKU cần tìm
  * @returns {Promise<Array>} Danh sách sản phẩm tìm được
  */
+// hiên tại không dùng đến
 export const searchProductBySKU = async (sku) => {
-  const res = await api.get('/banhangtaiquay/sanpham/search-sku', {
-    params: { keyword: sku }
+  const res = await api.get("/banhangtaiquay/sanpham/search-sku", {
+    params: { keyword: sku },
   });
   return res.data;
 };
 
 /**
- * ✅ MỚI: Tìm kiếm sản phẩm CHỈ theo SKU (không tìm IMEI)
+ *  MỚI: Tìm kiếm sản phẩm CHỈ theo SKU (không tìm IMEI)
  * @param {string} sku - SKU cần tìm
  * @returns {Promise<Array>} Danh sách sản phẩm tìm được
  */
 export const searchProductBySKUOnly = async (sku) => {
-  const res = await api.get('/banhangtaiquay/sanpham/search-sku-only', {
-    params: { sku: sku }
+  const res = await api.get("/banhangtaiquay/sanpham/search-sku-only", {
+    params: { sku: sku },
   });
   return res.data;
 };
 
 /**
- * Tìm kiếm sản phẩm theo IMEI
+ * Tìm kiếm sản phẩm theo IMEI 100%
  * @param {string} imei - IMEI cần tìm
  * @returns {Promise<Array>} Danh sách sản phẩm tìm được
  */
@@ -742,7 +720,23 @@ export const searchProductByIMEI = async (imei) => {
  * @returns {Promise<string>} Thông báo trạng thái API
  */
 export const testAPI = async () => {
-  const res = await api.get('/banhangtaiquay/sanpham/test');
+  const res = await api.get("/banhangtaiquay/sanpham/test");
+  return res.data;
+};
+
+/**
+ * Tìm kiếm sản phẩm kết hợp SKU + IMEI
+ * @param {string} sku - SKU phải đúng 100%
+ * @param {string} imei - IMEI bắt đầu với chuỗi tìm kiếm
+ * @returns {Promise<Array>} Danh sách sản phẩm tìm được
+ */
+export const searchProductCombined = async (sku, imei) => {
+  const res = await api.get("/banhangtaiquay/sanpham/search-combined", {
+    params: {
+      sku: sku, // SKU phải đúng 100%
+      imei: imei, // IMEI bắt đầu với chuỗi tìm kiếm (không phải LIKE)
+    },
+  });
   return res.data;
 };
 
@@ -768,6 +762,19 @@ export const loadIMEIForAccessory = async (sku) => {
   return res.data;
 };
 
+/**
+ * Load danh sách IMEI với filter IMEI
+ * @param {string} sku - Mã SKU của sản phẩm/phụ kiện
+ * @param {string} imeiFilter - Chuỗi IMEI để filter (bắt đầu với)
+ * @returns {Promise<Array>} Danh sách IMEI có sẵn với filter
+ */
+export const loadIMEIWithFilter = async (sku, imeiFilter) => {
+  const res = await api.get(`/banhangtaiquay/sanpham/${sku}/imei/search`, {
+    params: { imei: imeiFilter },
+  });
+  return res.data;
+};
+
 // ==================== VOUCHER BAN HANG TAI QUAY API ====================
 
 /**
@@ -776,7 +783,7 @@ export const loadIMEIForAccessory = async (sku) => {
  * @returns {Promise<Array>} Danh sách voucher hợp lệ
  */
 export const fetchVouchersForBanHangTaiQuay = async () => {
-  const res = await api.get('/banhangtaiquay/voucher/valid');
+  const res = await api.get("/banhangtaiquay/voucher/valid");
   return res.data;
 };
 
@@ -786,9 +793,11 @@ export const fetchVouchersForBanHangTaiQuay = async () => {
  * @param {number} tongTienDonHang - Tổng tiền đơn hàng
  * @returns {Promise<Array>} Danh sách voucher hợp lệ
  */
-export const fetchVouchersForBanHangTaiQuayByAmount = async (tongTienDonHang) => {
-  const res = await api.get('/banhangtaiquay/voucher/valid-by-amount', {
-    params: { tongTienDonHang }
+export const fetchVouchersForBanHangTaiQuayByAmount = async (
+  tongTienDonHang
+) => {
+  const res = await api.get("/banhangtaiquay/voucher/valid-by-amount", {
+    params: { tongTienDonHang },
   });
   return res.data;
 };
@@ -799,10 +808,13 @@ export const fetchVouchersForBanHangTaiQuayByAmount = async (tongTienDonHang) =>
  * @param {number} tongTienDonHang - Tổng tiền đơn hàng
  * @returns {Promise<Object>} Thông tin voucher và số tiền giảm
  */
-export const validateVoucherForBanHang = async (codeVoucher, tongTienDonHang) => {
-  const res = await api.post('/banhangtaiquay/voucher/validate', {
+export const validateVoucherForBanHang = async (
+  codeVoucher,
+  tongTienDonHang
+) => {
+  const res = await api.post("/banhangtaiquay/voucher/validate", {
     codeVoucher,
-    tongTienDonHang
+    tongTienDonHang,
   });
   return res.data;
 };
@@ -815,7 +827,7 @@ export const validateVoucherForBanHang = async (codeVoucher, tongTienDonHang) =>
  * @returns {Promise<Object>} Thông tin đơn hàng đã lưu
  */
 export const luuDonHang = async (orderData) => {
-  const res = await api.post('/banhangtaiquay/thanh-toan/luu-don', orderData);
+  const res = await api.post("/banhangtaiquay/thanh-toan/luu-don", orderData);
   return res.data;
 };
 
@@ -825,7 +837,10 @@ export const luuDonHang = async (orderData) => {
  * @returns {Promise<Object>} Thông tin đơn hàng đã thanh toán
  */
 export const thanhToanDonHang = async (orderData) => {
-  const res = await api.post('/banhangtaiquay/thanh-toan/thanh-toan', orderData);
+  const res = await api.post(
+    "/banhangtaiquay/thanh-toan/thanh-toan",
+    orderData
+  );
   return res.data;
 };
 
@@ -838,7 +853,7 @@ export const thanhToanDonHang = async (orderData) => {
  */
 export const getDonHangLuu = async (userId = null) => {
   const params = userId ? { userId } : {};
-  const res = await api.get('/banhangtaiquay/don-hang-luu', { params });
+  const res = await api.get("/banhangtaiquay/don-hang-luu", { params });
   return res.data;
 };
 
@@ -859,7 +874,7 @@ export const getDonHangLuuByMaDonHang = async (maDonHang) => {
  */
 export const countDonHangLuu = async (userId = null) => {
   const params = userId ? { userId } : {};
-  const res = await api.get('/banhangtaiquay/don-hang-luu/count', { params });
+  const res = await api.get("/banhangtaiquay/don-hang-luu/count", { params });
   return res.data;
 };
 
@@ -869,8 +884,8 @@ export const countDonHangLuu = async (userId = null) => {
  * @returns {Promise<Array>} Danh sách đơn hàng của user
  */
 export const getMyDonHangLuu = async (userId) => {
-  const res = await api.get('/banhangtaiquay/don-hang-luu/my-orders', {
-    params: { userId }
+  const res = await api.get("/banhangtaiquay/don-hang-luu/my-orders", {
+    params: { userId },
   });
   return res.data;
 };
@@ -885,16 +900,62 @@ export const xoaDonHangLuu = async (maDonHang) => {
   return res.data;
 };
 
+// ==================== THỐNG KÊ API ====================
+
+/**
+ * Lấy tổng doanh thu từ tất cả đơn hàng có trạng thái = 2
+ * @returns {Promise<Object>} {tongDoanhThu, soLuongSanPham, soLuongDonHang}
+ */
+export const getTongDoanhThu = async () => {
+  const res = await api.get("/thongke/tong-quan/tong-doanh-thu");
+  return res.data;
+};
+
+/**
+ * Lấy tổng doanh thu theo năm hiện tại từ đơn hàng có trạng thái = 2
+ * @returns {Promise<Object>} {tongDoanhThu, soLuongSanPham, soLuongDonHang}
+ */
+export const getDoanhThuNamHienTai = async () => {
+  const res = await api.get("/thongke/tong-quan/doanh-thu-nam-hien-tai");
+  return res.data;
+};
+
+/**
+ * Lấy danh sách các năm có đơn hàng (từ năm sớm nhất đến năm hiện tại)
+ * @returns {Promise<Array<number>>} Danh sách năm
+ */
+export const getDanhSachNam = async () => {
+  const res = await api.get("/thongke/tong-quan/danh-sach-nam");
+  return res.data;
+};
+
+/**
+ * Lấy thống kê với filter
+ * @param {Object} params - Các tham số filter
+ * @param {string} params.dayWeekFilter - "today", "yesterday", "this-week", "last-week" hoặc null
+ * @param {number} params.month - Tháng (1-12) hoặc null
+ * @param {number} params.year - Năm hoặc null
+ * @param {string} params.dateFrom - Ngày bắt đầu (yyyy-MM-dd) hoặc null
+ * @param {string} params.dateTo - Ngày kết thúc (yyyy-MM-dd) hoặc null
+ * @returns {Promise<Object>} {tongDoanhThu, soLuongSanPham, soLuongDonHangThanhCong, soLuongDonHangHuy}
+ */
+export const getThongKeFilter = async (params) => {
+  const res = await api.get("/thongke/tong-quan/filter", { params });
+  return res.data;
+};
+
+/**
+ * Lấy dữ liệu biểu đồ doanh thu theo filter
+ * @param {Object} params - Các tham số filter (giống getThongKeFilter)
+ * @returns {Promise<Object>} {labels: string[], values: number[]} - Dữ liệu cho biểu đồ
+ */
+export const getDoanhThuChartData = async (params) => {
+  const res = await api.get("/thongke/tong-quan/chart-doanh-thu", { params });
+  return res.data;
+};
+
 // Dòng cuối cùng của file (trước export default)
 // Dòng cuối cùng của file
 
-
-
-
-
-
-
 // Dòng cuối cùng của file (trước export default)
 export default api;
-
-

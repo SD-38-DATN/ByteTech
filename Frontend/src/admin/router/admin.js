@@ -34,12 +34,10 @@
 
 import FomAdmin from "../layout/FomAdmin.vue";
 import HomeAdmin from "../views/HomeAdmin.vue";
-import banHangRouter from "./BanHang";
 import khachHangRouter from "./KhachHang";
 import khuyenMaiRouter from "./KhuyenMai";
 import nhanVienRouter from "./NhanVien";
 import sanPhamRouter from "./SanPham";
-import phukienRouter from "./PhuKien";
 
 import caNhanRouter from "./ThongTinCaNhan";
 import voucherRouter from "./Voucher";
@@ -47,7 +45,7 @@ import phuKienRouter from "./PhuKien";
 
 import thongKeRouter from "./ThongKe";
 import donHangRouter from "./DonHang";
-import xuLyDonLuuRouter from "./XuLyDonLuu";
+import banHangTaiQuayRouter from "./BanHangTaiQuay";
 const AdminRouter = {
   path: "/admin",
   component: FomAdmin,
@@ -57,7 +55,7 @@ const AdminRouter = {
       name: "HomeAdmin",
       component: HomeAdmin,
     },
-    banHangRouter,
+    banHangTaiQuayRouter,
     khachHangRouter,
     khuyenMaiRouter,
     nhanVienRouter,
@@ -67,7 +65,6 @@ const AdminRouter = {
     thongKeRouter,
     voucherRouter,
     donHangRouter,
-    xuLyDonLuuRouter
   ],
 };
 

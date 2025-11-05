@@ -137,6 +137,8 @@
                   : "Chưa có đơn hàng nào được lưu"
               }}
             </p>
+            <!-- ✅ DEBUG: Hiển thị thông tin debug -->
+
             <button
               v-if="!searchQuery"
               @click="refreshData"
@@ -153,6 +155,7 @@
               <thead class="table-light">
                 <tr>
                   <th>Mã Đơn Hàng</th>
+                  <th>Tên Khách Hàng</th>
                   <th>Số Điện Thoại</th>
                   <th>Nhân Viên</th>
                   <th>Tổng Tiền</th>
@@ -167,15 +170,18 @@
                     <span class="order-code">#{{ order.maDonHang }}</span>
                   </td>
                   <td>
+                    <span class="customer-name">{{
+                      order.tenNguoiNhan || "Không có tên"
+                    }}</span>
+                  </td>
+                  <td>
                     <span class="phone-number">{{
                       order.soDienThoai || "N/A"
                     }}</span>
                   </td>
                   <td>
                     <div class="employee-info">
-                      <strong>{{
-                        order.tenNhanVien || "N/A"
-                      }}</strong>
+                      <strong>{{ order.tenNhanVien || "N/A" }}</strong>
                       <small class="text-muted d-block">{{
                         order.username || "N/A"
                       }}</small>
@@ -301,6 +307,10 @@
                 <h6>Thông Tin Khách Hàng</h6>
                 <table class="table table-sm">
                   <tr>
+                    <td><strong>Tên khách hàng:</strong></td>
+                    <td>{{ selectedOrder.tenNguoiNhan || "Không có tên" }}</td>
+                  </tr>
+                  <tr>
                     <td><strong>Số điện thoại:</strong></td>
                     <td>{{ selectedOrder.soDienThoai || "N/A" }}</td>
                   </tr>
@@ -355,7 +365,6 @@
                       <th>Số lượng</th>
                       <th>IMEI/Serial</th>
                       <th>Đơn giá</th>
-                      <th>Thành tiền</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -376,7 +385,9 @@
                             </small>
                           </div>
                           <div v-else class="thuoc-tinh-display">
-                            <small class="text-muted">Không có thuộc tính</small>
+                            <small class="text-muted"
+                              >Không có thuộc tính</small
+                            >
                           </div>
                         </div>
                       </td>
@@ -388,9 +399,6 @@
                         <span v-else class="text-muted">Không có IMEI</span>
                       </td>
                       <td>{{ formatCurrency(item.gia) }}</td>
-                      <td class="fw-bold">
-                        {{ formatCurrency(item.gia * item.soLuong) }}
-                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -419,7 +427,12 @@
 
 <script>
 import { ref, computed, onMounted, watch } from "vue";
-import { getDonHangLuu, getDonHangLuuByMaDonHang, xoaDonHangLuu } from "@/service/api";
+import {
+  getDonHangLuu,
+  getDonHangLuuByMaDonHang,
+  xoaDonHangLuu,
+  getCurrentUser,
+} from "@/service/api";
 
 export default {
   name: "XuLyDonLuu",
@@ -430,7 +443,7 @@ export default {
     const searchQuery = ref("");
     const selectedDateRange = ref("");
     const sortBy = ref("ngayDat_desc");
-    const orderScope = ref("all"); // 'all' hoặc 'mine'
+    const orderScope = ref("mine"); // 'all' hoặc 'mine' - Mặc định là "Chỉ của tôi"
     const selectedOrder = ref(null);
     const currentPage = ref(1);
     const itemsPerPage = 10;
@@ -442,6 +455,7 @@ export default {
 
       // Early return nếu không có dữ liệu
       if (!filtered || filtered.length === 0) {
+        console.log("🔍 DEBUG: filteredOrders - No data, returning []");
         return [];
       }
 
@@ -465,11 +479,15 @@ export default {
       // Date filter - Tối ưu bằng cách cache date objects
       if (selectedDateRange.value) {
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
+        const today = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        );
+
         filtered = filtered.filter((order) => {
           const orderDate = new Date(order.ngayDat);
-          
+
           switch (selectedDateRange.value) {
             case "today":
               return orderDate >= today;
@@ -493,10 +511,14 @@ export default {
             case "before7days": {
               const sevenDaysAgo = new Date(today);
               sevenDaysAgo.setDate(today.getDate() - 7);
-              return orderDate < sevenDaysAgo; // ✅ Hiển thị đơn hàng trước 7 ngày (cũ hơn 7 ngày)
+              return orderDate < sevenDaysAgo; //  Hiển thị đơn hàng trước 7 ngày (cũ hơn 7 ngày)
             }
             case "thisMonth": {
-              const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+              const startOfMonth = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                1
+              );
               return orderDate >= startOfMonth;
             }
             default:
@@ -508,7 +530,7 @@ export default {
       // Sort - Tối ưu bằng cách cache sort function
       const [field, direction] = sortBy.value.split("_");
       const isDesc = direction === "desc";
-      
+
       if (field === "ngayDat") {
         filtered.sort((a, b) => {
           const dateA = new Date(a.ngayDat);
@@ -564,31 +586,32 @@ export default {
       return pages;
     });
 
-    // Methods
+    // ✅ TỐI ƯU: Load thông tin user hiện tại từ API
     const loadCurrentUser = async () => {
       try {
-        // TODO: Implement API call to get current user
-        // const response = await api.get('/users/me')
-        // currentUser.value = response.data
-
-        // Tạm thời sử dụng user mặc định
-        // TODO: Thay thế bằng API call thực tế
-        currentUser.value = {
-          id: 1,
-          username: "admin",
-          tenHienThi: "Nguyễn Văn Admin",
-          email: "admin@example.com",
-        };
-
-        console.log("ℹ️ Sử dụng user mặc định - cần implement API /users/me");
+        const response = await getCurrentUser();
+        // API returns { username, role, user: UserDTO }
+        if (response && response.user) {
+          currentUser.value = {
+            id: response.user.id, // ✅ Sử dụng numeric ID từ API
+            username: response.user.username || response.username,
+            tenHienThi: response.user.tenHienThi || "Admin",
+          };
+        } else {
+          // Fallback nếu API không trả về đúng format
+          currentUser.value = {
+            id: null,
+            username: response?.username || "admin",
+            tenHienThi: "Admin",
+          };
+        }
       } catch (error) {
-        console.error("Lỗi khi tải thông tin user:", error);
-        // Fallback user
+        console.error("❌ ERROR: Lỗi khi load thông tin user:", error);
+        // Fallback: Set giá trị mặc định khi API lỗi
         currentUser.value = {
-          id: 1,
+          id: null,
           username: "admin",
           tenHienThi: "Admin",
-          email: "admin@example.com",
         };
       }
     };
@@ -597,37 +620,38 @@ export default {
       loading.value = true;
       try {
         // Lấy đơn hàng theo phạm vi (tất cả hoặc chỉ của user hiện tại)
-        const userId =
-          orderScope.value === "mine" ? currentUser.value?.id : null;
-        
-        console.log('🔍 DEBUG: orderScope:', orderScope.value);
-        console.log('🔍 DEBUG: currentUser:', currentUser.value);
-        console.log('🔍 DEBUG: userId gửi lên API:', userId);
-        
+        let userId = null;
+        if (orderScope.value === "mine" && currentUser.value?.id) {
+          //  Đảm bảo userId là số, không phải chuỗi
+          const userIdValue = currentUser.value.id;
+          if (typeof userIdValue === "number" && userIdValue > 0) {
+            userId = userIdValue;
+          } else if (
+            typeof userIdValue === "string" &&
+            !isNaN(parseInt(userIdValue))
+          ) {
+            userId = parseInt(userIdValue);
+          } else {
+            console.warn("⚠️ User ID không hợp lệ:", userIdValue);
+            // Nếu không có user ID hợp lệ, chỉ lấy tất cả đơn hàng
+            userId = null;
+          }
+        }
         const response = await getDonHangLuu(userId);
-        
-        console.log('🔍 DEBUG: Response từ API:', response);
-        console.log('🔍 DEBUG: Response type:', typeof response);
-        console.log('🔍 DEBUG: Response length:', response?.length);
-
         savedOrders.value = response || [];
-        console.log(
-          "✅ Đã tải đơn hàng đã lưu từ API:",
-          response?.length || 0,
-          "đơn hàng"
-        );
-        
-        console.log('🔍 DEBUG: savedOrders.value sau khi set:', savedOrders.value);
-        console.log('🔍 DEBUG: savedOrders.value.length:', savedOrders.value.length);
 
         // Không sử dụng mock data nữa - chỉ dùng API thực tế
         if (!response || response.length === 0) {
-          console.log("ℹ️ Không có đơn hàng đã lưu nào");
           savedOrders.value = [];
+          console.log("🔍 DEBUG: Không có dữ liệu, reset savedOrders về []");
         }
       } catch (error) {
-        console.error("Lỗi khi tải danh sách đơn hàng:", error);
-        alert("Có lỗi xảy ra khi tải dữ liệu từ server");
+        console.error("❌ Lỗi khi tải đơn hàng đã lưu:", error);
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Có lỗi xảy ra khi tải dữ liệu từ server";
+        alert(`Lỗi: ${errorMessage}`);
         savedOrders.value = [];
       } finally {
         loading.value = false;
@@ -676,45 +700,34 @@ export default {
       if (
         confirm(`Bạn có chắc chắn muốn xử lý đơn hàng #${order.maDonHang}?`)
       ) {
-        console.log("Xử lý đơn hàng:", order.maDonHang);
-
         try {
-          // ✅ KIỂM TRA: Đơn hàng đã tồn tại trong bán hàng tại quầy chưa
+          //  KIỂM TRA: Đơn hàng đã tồn tại trong bán hàng tại quầy chưa
           const existingOrders = JSON.parse(
             localStorage.getItem("danhSachDonHang") || "[]"
           );
-          
+
           const existingOrder = existingOrders.find(
             (existingOrder) => existingOrder.maDonHang === order.maDonHang
           );
-          
+
           if (existingOrder) {
-            const confirmReplace = confirm(
+            // ✅ Đơn giản hóa: Chỉ thông báo và hỏi có muốn chuyển hay không
+            const confirmNavigate = confirm(
               `⚠️ Đơn hàng #${order.maDonHang} đã tồn tại trong bán hàng tại quầy!\n\n` +
-              `Bạn có muốn:\n` +
-              `• Chuyển sang đơn hàng hiện tại (giữ nguyên dữ liệu cũ)\n` +
-              `• Thay thế bằng dữ liệu mới từ đơn hàng đã lưu\n\n` +
-              `Nhấn OK để thay thế, Cancel để chuyển sang đơn hàng hiện tại.`
+                `Bạn có muốn chuyển sang trang bán hàng để xem đơn hàng này?\n\n` +
+                `Nhấn OK để chuyển, Cancel để hủy.`
             );
-            
-            if (confirmReplace) {
-              console.log("🔄 Thay thế đơn hàng hiện tại bằng dữ liệu mới");
-              // Xóa đơn hàng cũ
-              const updatedOrders = existingOrders.filter(
-                (existingOrder) => existingOrder.maDonHang !== order.maDonHang
-              );
-              localStorage.setItem("danhSachDonHang", JSON.stringify(updatedOrders));
-            } else {
-              console.log("🔄 Chuyển sang đơn hàng hiện tại");
-              // Chuyển sang đơn hàng hiện tại
-              window.location.href = `/admin/ban-hang?loadOrder=saved_${order.maDonHang}`;
-              return;
+
+            if (confirmNavigate) {
+              // Chuyển sang đơn hàng hiện tại (giữ nguyên dữ liệu)
+              window.location.href = `/admin/ban-hang-tai-quay/ban-hang?loadOrder=saved_${order.maDonHang}`;
             }
+            // Nếu không chuyển, không làm gì cả (không thay đổi gì)
+            return;
           }
 
-          // Lấy chi tiết đơn hàng từ API
+          // ✅ Đơn hàng chưa tồn tại → Lấy dữ liệu mới từ server
           const orderDetails = await getDonHangLuuByMaDonHang(order.maDonHang);
-
           if (!orderDetails) {
             alert("Không tìm thấy chi tiết đơn hàng");
             return;
@@ -722,7 +735,24 @@ export default {
 
           // Chuyển đổi dữ liệu từ database format sang cart format
           const cartItems = convertOrderToCartFormat(orderDetails);
-          console.log('🔍 DEBUG: cartItems sau khi convert:', cartItems);
+
+          // ✅ Lưu vào localStorage (đã kiểm tra không tồn tại ở trên)
+          const currentOrders = JSON.parse(
+            localStorage.getItem("danhSachDonHang") || "[]"
+          );
+
+          // ✅ Double-check: Kiểm tra lại một lần nữa (phòng trường hợp có đơn hàng khác thêm vào giữa chừng)
+          const existingIndex = currentOrders.findIndex(
+            (od) =>
+              od.maDonHang === order.maDonHang ||
+              od.id === `saved_${order.maDonHang}`
+          );
+
+          // ✅ SỬA LỖI: Giữ lại customerInfo từ đơn hàng cũ nếu có (khi thay thế)
+          const oldOrder =
+            existingIndex !== -1 ? currentOrders[existingIndex] : null;
+          const oldCustomerInfo =
+            oldOrder?.thongTinKhachHang?.customerInfo || null;
 
           // Lưu dữ liệu vào localStorage để bán hàng tại quầy có thể load
           const orderData = {
@@ -730,29 +760,31 @@ export default {
             maDonHang: order.maDonHang,
             gioHang: cartItems,
             thongTinKhachHang: {
-              tenKhachHang: orderDetails.tenNhanVien || "",
+              tenKhachHang: orderDetails.tenNguoiNhan || "", // ✅ SỬA: Sử dụng tenNguoiNhan thay vì tenNhanVien
               soDienThoai: orderDetails.soDienThoai || "",
               diaChi: orderDetails.diaChiGiaoHang || "",
+              customerInfo: oldCustomerInfo, // ✅ Giữ lại customerInfo từ đơn hàng cũ nếu có
             },
             tongTien: orderDetails.tongTien,
             ngayTao: new Date().toISOString(),
             trangThai: "dang_xu_ly",
           };
-          
-          console.log('🔍 DEBUG: orderData cuối cùng:', orderData);
 
-          // Lưu vào localStorage
-          const currentOrders = JSON.parse(
-            localStorage.getItem("danhSachDonHang") || "[]"
-          );
-          currentOrders.push(orderData);
+          if (existingIndex !== -1) {
+            // Nếu đã tồn tại (do race condition), thay thế bằng dữ liệu mới từ server
+            currentOrders[existingIndex] = orderData;
+          } else {
+            // Đơn hàng chưa tồn tại, thêm mới
+            currentOrders.push(orderData);
+          }
+
           localStorage.setItem(
             "danhSachDonHang",
             JSON.stringify(currentOrders)
           );
 
           // Chuyển sang bán hàng tại quầy
-          window.location.href = `/admin/ban-hang?loadOrder=saved_${order.maDonHang}`;
+          window.location.href = `/admin/ban-hang-tai-quay/ban-hang?loadOrder=saved_${order.maDonHang}`;
         } catch (error) {
           console.error("Lỗi khi xử lý đơn hàng:", error);
           alert("Có lỗi xảy ra khi xử lý đơn hàng");
@@ -762,32 +794,24 @@ export default {
 
     // Function chuyển đổi từ database format sang cart format
     const convertOrderToCartFormat = (orderDetails) => {
-      console.log('🔍 DEBUG: orderDetails:', orderDetails);
-      console.log('🔍 DEBUG: chiTietDonHangs:', orderDetails.chiTietDonHangs);
-      
       const cartItems = [];
       const groupedItems = {};
 
       // Nhóm các chi tiết đơn hàng theo SKU
       orderDetails.chiTietDonHangs.forEach((item, index) => {
-        console.log(`🔍 DEBUG: Item ${index}:`, item);
-        console.log(`🔍 DEBUG: loaiSanPham: ${item.loaiSanPham}`);
-        
-        // ✅ SỬA LỖI: Phân biệt sản phẩm và phụ kiện
+        //  SỬA LỖI: Phân biệt sản phẩm và phụ kiện
         const isPhuKien = item.loaiSanPham === "phukien";
         const sku = item.maSKU; // Backend trả về SKU trong field maSKU cho cả sản phẩm và phụ kiện
-        
-        console.log(`🔍 DEBUG: SKU: ${sku}, isPhuKien: ${isPhuKien}`);
+
         if (!sku) {
-          console.log('❌ SKU không tồn tại, bỏ qua item');
           return;
         }
 
         if (!groupedItems[sku]) {
-          // ✅ SỬA LỖI: Tạo object với đúng field cho sản phẩm và phụ kiện
+          //  SỬA LỖI: Tạo object với đúng field cho sản phẩm và phụ kiện
           groupedItems[sku] = {
             sanPham: {
-              // ✅ Quan trọng: Phụ kiện dùng maSKUPhuKien, sản phẩm dùng maSKU
+              //  Quan trọng: Phụ kiện dùng maSKUPhuKien, sản phẩm dùng maSKU
               maSKU: isPhuKien ? null : sku,
               maSKUPhuKien: isPhuKien ? sku : null,
               tenSanPham: item.tenSanPham,
@@ -795,7 +819,7 @@ export default {
               loai: isPhuKien ? "Phụ kiện" : "Sản phẩm chính",
               thuocTinh: item.thuocTinh,
             },
-            // ✅ Đặt field đúng cho maSKU/maSKUPhuKien ở level root
+            //  Đặt field đúng cho maSKU/maSKUPhuKien ở level root
             maSKU: isPhuKien ? null : sku,
             maSKUPhuKien: isPhuKien ? sku : null,
             tenSanPham: item.tenSanPham,
@@ -827,8 +851,8 @@ export default {
               tenSanPham: item.tenSanPham,
               gia: item.gia,
               thuocTinh: item.thuocTinh,
-              soLuong: 1
-            }
+              soLuong: 1,
+            },
           };
           groupedItems[sku].imeiList.push(imeiObject);
         }
@@ -836,8 +860,6 @@ export default {
 
       // Chuyển đổi thành array
       const result = Object.values(groupedItems);
-      console.log('🔍 DEBUG: Kết quả convertOrderToCartFormat:', result);
-      console.log('🔍 DEBUG: Số lượng sản phẩm:', result.length);
       return result;
     };
 
@@ -850,23 +872,49 @@ export default {
     };
 
     const deleteOrder = async (order) => {
-      if (confirm(`Bạn có chắc chắn muốn xóa đơn hàng #${order.maDonHang}?\n\nĐơn hàng sẽ được chuyển sang trạng thái "Đã hủy" và tất cả IMEI (nếu có) sẽ được giải phóng về trạng thái "Có sẵn".`)) {
-        console.log("🗑️ Xóa đơn hàng:", order.maDonHang);
-        
+      //  KIỂM TRA: Đơn hàng đã tồn tại trong bán hàng tại quầy chưa
+      const existingOrders = JSON.parse(
+        localStorage.getItem("danhSachDonHang") || "[]"
+      );
+
+      const existingOrder = existingOrders.find(
+        (existingOrder) => existingOrder.maDonHang === order.maDonHang
+      );
+      if (existingOrder) {
+        // ✅ Đơn giản hóa: Chỉ thông báo và hỏi có muốn chuyển hay không
+        const confirmNavigate = confirm(
+          `⚠️ Đơn hàng #${order.maDonHang} đã tồn tại trong bán hàng tại quầy!\n\n` +
+            `Bạn Không thể xóa\n\n` +
+            `Nhấn OK để chuyển, Cancel để hủy.`
+        );
+
+        if (confirmNavigate) {
+          // Chuyển sang đơn hàng hiện tại (giữ nguyên dữ liệu)
+          window.location.href = `/admin/ban-hang-tai-quay/ban-hang?loadOrder=saved_${order.maDonHang}`;
+        }
+        // Nếu không chuyển, không làm gì cả (không thay đổi gì)
+        return;
+      }
+
+      if (
+        confirm(
+          `Bạn có chắc chắn muốn xóa đơn hàng #${order.maDonHang}?\n\nĐơn hàng sẽ được chuyển sang trạng thái "Đã hủy" và tất cả IMEI (nếu có) sẽ được giải phóng về trạng thái "Có sẵn".`
+        )
+      ) {
         try {
           // Gọi API xóa đơn hàng
           await xoaDonHangLuu(order.maDonHang);
-          console.log("✅ Đã xóa đơn hàng thành công");
-          
+
           // Reload danh sách đơn hàng
           await loadSavedOrders();
-          console.log("🔄 Đã reload danh sách đơn hàng");
-          
+
           alert("Đã xóa đơn hàng thành công!");
-          
         } catch (error) {
           console.error("❌ Lỗi khi xóa đơn hàng:", error);
-          alert("Có lỗi xảy ra khi xóa đơn hàng: " + (error.response?.data || error.message));
+          alert(
+            "Có lỗi xảy ra khi xóa đơn hàng: " +
+              (error.response?.data || error.message)
+          );
         }
       }
     };
@@ -1041,6 +1089,11 @@ export default {
 .phone-number {
   font-family: "Courier New", monospace;
   color: #495057;
+}
+
+.customer-name {
+  font-weight: 500;
+  color: #2c3e50;
 }
 
 .imei-info {

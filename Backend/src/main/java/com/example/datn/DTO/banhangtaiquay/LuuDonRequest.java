@@ -18,12 +18,13 @@ public class LuuDonRequest {
     private Boolean isUpdate; // true = cập nhật đơn hiện tại, false = tạo đơn mới
     private BigDecimal tongTien;
     private String diaChiGiaoHang;
+    private String tenNguoiNhan;
     private String soDienThoai;
     private String phuongThucThanhToan;
     private String ghiChu;
     private Integer userVoucherId;
     private List<ChiTietDonHangBanHangTaiQuayDTO> chiTietDonHangs;
-    
+
     // ✅ THÊM: Các trường mới để xử lý số lượng
     private Boolean updateProductQuantities; // Có trừ số lượng sản phẩm/phụ kiện không
     private Boolean updateVoucherQuantities; // Có trừ số lượng voucher không

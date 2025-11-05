@@ -16,6 +16,7 @@ public class ChotDonRequest {
     private Integer userId; // ID của nhân viên xử lý đơn hàng
     private Integer maDonHang; // Mã đơn hàng cần thanh toán (nếu có)
     private BigDecimal tongTien;
+    private String tenNguoiNhan;
     private String diaChiGiaoHang;
     private String soDienThoai;
     private String phuongThucThanhToan;
@@ -26,4 +27,6 @@ public class ChotDonRequest {
     // ✅ THÊM: Các trường mới để xử lý số lượng
     private Boolean updateProductQuantities; // Có trừ số lượng sản phẩm/phụ kiện không
     private Boolean updateVoucherQuantities; // Có trừ số lượng voucher không
+
+
 }

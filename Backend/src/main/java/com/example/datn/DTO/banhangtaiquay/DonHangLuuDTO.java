@@ -14,9 +14,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DonHangLuuDTO {
-    
+
     private Integer maDonHang;
     private String soDienThoai;
+    private String tenNguoiNhan;
     private String diaChiGiaoHang;
     private BigDecimal tongTien;
     private LocalDateTime ngayDat;
@@ -24,7 +25,7 @@ public class DonHangLuuDTO {
     private String tenNhanVien;
     private String username;
     private List<ChiTietDonHangLuuDTO> chiTietDonHangs;
-    
+
     @Data
     @Builder
     @NoArgsConstructor

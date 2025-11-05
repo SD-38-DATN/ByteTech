@@ -75,14 +75,6 @@
       >
         💳 Thanh toán
       </button>
-      
-      <button 
-        class="btn-print" 
-        @click="handlePrint"
-        :disabled="!canPrint"
-      >
-        🖨️ In hóa đơn
-      </button>
     </div>
   </div>
 </template>
@@ -92,7 +84,7 @@ import { computed, ref } from 'vue'
 import { useGioHangBanHangTaiQuay } from '@/components/banhangtaiquay/useGioHangBanHangTaiQuay'
 import VoucherBanHangTaiQuay from './VoucherBanHangTaiQuay.vue'
 
-const { tongTienHang, tongKhuyenMai, tongGiam, tongThanhToan } = useGioHangBanHangTaiQuay()
+const { tongTienHang, tongThanhToan } = useGioHangBanHangTaiQuay()
 
 // Form data
 const phuongThuc = ref('')
@@ -119,10 +111,6 @@ const canSubmit = computed(() => {
   return tongTienHang.value > 0 && phuongThuc.value
 })
 
-const canPrint = computed(() => {
-  return tongTienHang.value > 0
-})
-
 // Methods
 function formatCurrency(value) {
   return new Intl.NumberFormat('vi-VN', {
@@ -133,7 +121,6 @@ function formatCurrency(value) {
 
 
 function handleSave() {
-  console.log('💾 Lưu đơn hàng...')
   // Emit event to parent với dữ liệu
   emit('save', {
     phuongThuc: phuongThuc.value,
@@ -146,7 +133,6 @@ function handleSave() {
 }
 
 function handleSubmit() {
-  console.log('✅ Chốt đơn hàng...')
   // Emit event to parent với dữ liệu
   emit('submit', {
     phuongThuc: phuongThuc.value,
@@ -158,19 +144,12 @@ function handleSubmit() {
   })
 }
 
-function handlePrint() {
-  console.log('🖨️ In hóa đơn...')
-  // Emit event to parent
-  emit('print')
-}
-
 // 🎫 Voucher functions
 function onVoucherApplied(voucherData) {
   voucherInfo.value = voucherData.voucher
   soTienGiamVoucher.value = voucherData.soTienGiam
   voucherApplied.value = true
   
-  console.log('✅ Voucher đã áp dụng:', voucherData)
 }
 
 function onVoucherRemoved() {
@@ -178,7 +157,6 @@ function onVoucherRemoved() {
   soTienGiamVoucher.value = 0
   voucherInfo.value = null
   
-  console.log('🗑️ Đã xóa voucher')
 }
 
 // Clear form function
@@ -189,11 +167,10 @@ function clearForm() {
   soTienGiamVoucher.value = 0
   voucherInfo.value = null
   
-  console.log('🧹 Đã clear form thanh toán')
 }
 
 // Emits
-const emit = defineEmits(['save', 'submit', 'print'])
+const emit = defineEmits(['save', 'submit'])
 
 // Expose clearForm function
 defineExpose({
@@ -364,19 +341,7 @@ defineExpose({
   box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
 }
 
-.btn-print {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
-}
-
-.btn-print:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.4);
-}
-
-.btn-save:disabled, .btn-submit:disabled, .btn-print:disabled {
+.btn-save:disabled, .btn-submit:disabled {
   background: #e9ecef;
   color: #6c757d;
   cursor: not-allowed;

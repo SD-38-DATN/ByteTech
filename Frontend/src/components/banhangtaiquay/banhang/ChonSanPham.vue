@@ -47,29 +47,40 @@
             </tr>
           </thead>
           <tbody>
-            <template v-for="(sp, index) in filteredProducts" :key="sp.maSKU || sp.maSKUPhuKien || index">
+            <template
+              v-for="(sp, index) in filteredProducts"
+              :key="sp.maSKU || sp.maSKUPhuKien || index"
+            >
               <!-- Dòng sản phẩm chính -->
               <tr
                 @click="toggleIMEI(sp.maSKU || sp.maSKUPhuKien)"
                 class="product-row"
-                :class="{ expanded: expandedSKU === (sp.maSKU || sp.maSKUPhuKien) }"
+                :class="{
+                  expanded: expandedSKU === (sp.maSKU || sp.maSKUPhuKien),
+                }"
               >
                 <td>{{ index + 1 }}</td>
                 <td>
-                  <span class="sku-badge">{{ sp.maSKU || sp.maSKUPhuKien || 'N/A' }}</span>
+                  <span class="sku-badge">{{
+                    sp.maSKU || sp.maSKUPhuKien || "N/A"
+                  }}</span>
                 </td>
-                <td class="text-left">{{ sp.tenSanPham || sp.tenPhuKien || 'N/A' }}</td>
-                <td class="text-right">{{ formatCurrency(sp.sanPham?.gia || sp.gia || 0) }}</td>
+                <td class="text-left">
+                  {{ sp.tenSanPham || sp.tenPhuKien || "N/A" }}
+                </td>
+                <td class="text-right">
+                  {{ formatCurrency(sp.sanPham?.gia || sp.gia || 0) }}
+                </td>
                 <td>{{ sp.sanPham?.thuocTinh || sp.thuocTinh || "N/A" }}</td>
                 <td class="loai-cell">
-                  <span 
-                    class="loai-text" 
+                  <span
+                    class="loai-text"
                     :class="{
                       'loai-san-pham': sp.maSKU && !sp.maSKUPhuKien,
-                      'loai-phu-kien': sp.maSKUPhuKien && !sp.maSKU
+                      'loai-phu-kien': sp.maSKUPhuKien && !sp.maSKU,
                     }"
                   >
-                    {{ sp.maSKUPhuKien ? 'Phụ kiện' : 'Sản phẩm chính' }}
+                    {{ sp.maSKUPhuKien ? "Phụ kiện" : "Sản phẩm chính" }}
                   </span>
                 </td>
                 <td>
@@ -81,7 +92,10 @@
               </tr>
 
               <!-- Dòng hiển thị danh sách IMEI (expand) -->
-              <tr v-if="expandedSKU === (sp.maSKU || sp.maSKUPhuKien)" class="imei-row">
+              <tr
+                v-if="expandedSKU === (sp.maSKU || sp.maSKUPhuKien)"
+                class="imei-row"
+              >
                 <td colspan="8" class="imei-container">
                   <div v-if="loadingIMEI" class="loading">
                     <span>⏳ Đang tải danh sách IMEI...</span>
@@ -91,7 +105,10 @@
                   </div>
                   <div v-else class="imei-list">
                     <div class="imei-header">
-                      <h4>Danh sách IMEI - {{ sp.tenSanPham || sp.tenPhuKien || 'N/A' }}</h4>
+                      <h4>
+                        Danh sách IMEI -
+                        {{ sp.tenSanPham || sp.tenPhuKien || "N/A" }}
+                      </h4>
                       <span class="selected-count"
                         >Đã chọn: {{ selectedIMEIs.length }}</span
                       >
@@ -100,8 +117,13 @@
                       <button class="btn-deselect" @click.stop="boChonTatCa">
                         Bỏ chọn tất cả
                       </button>
-                      <button class="btn-chon-san-pham" @click.stop="chonSanPham(sp)">
-                        ✅ Chọn sản phẩm ({{ selectedIMEIs.length || imeiList.length || 1 }})
+                      <button
+                        class="btn-chon-san-pham"
+                        @click.stop="chonSanPham(sp)"
+                      >
+                        ✅ Chọn sản phẩm ({{
+                          selectedIMEIs.length || imeiList.length || 1
+                        }})
                       </button>
                     </div>
                     <table class="imei-table">
@@ -144,7 +166,21 @@
             </template>
           </tbody>
         </table>
+        <!-- ✅ HIỂN THỊ KHI CHƯA NHẬP GÌ (ƯU TIÊN CAO NHẤT) -->
+        <div
+          v-if="searchSKU.trim() === '' && searchIMEI.trim() === ''"
+          class="search-prompt"
+        >
+          <div class="search-prompt-icon">🔍</div>
+          <p class="search-prompt-text">
+            Nhập masku hay imei dữ liệu để tìm....
+          </p>
+        </div>
 
+        <!-- ✅ HIỂN THỊ LỖI IMEI TRÊN BẢNG (CHỈ KHI CÓ INPUT) -->
+        <div v-else-if="errorMessage" class="search-prompt error-prompt">
+          <p class="search-prompt-text">{{ errorMessage }}</p>
+        </div>
         <!-- Loading state -->
         <div v-if="isLoading" class="loading-state">
           <div class="loading-spinner"></div>
@@ -162,8 +198,17 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from "vue";
-import { searchProductBySKU, searchProductBySKUOnly, searchProductByIMEI, testAPI, loadIMEIForProduct, loadIMEIForAccessory } from "../../../service/api.js";
-import axios from "axios";
+import {
+  searchProductBySKU,
+  searchProductBySKUOnly,
+  searchProductByIMEI,
+  searchProductCombined,
+  testAPI,
+  loadIMEIForProduct,
+  loadIMEIForAccessory,
+  loadIMEIWithFilter as apiLoadIMEIWithFilter,
+} from "../../../service/api.js";
+import api from "../../../service/api.js";
 
 // Props
 const props = defineProps({
@@ -185,27 +230,29 @@ const expandedSKU = ref(null);
 const imeiList = ref([]);
 const loadingIMEI = ref(false);
 const selectedIMEIs = ref([]);
-const productCache = ref(new Map());
+//  Đã xóa productCache theo yêu cầu
 
+const errorMessage = ref(""); // thêm biến lỗi
 // Computed
 const filteredProducts = computed(() => {
   return searchResults.value;
 });
 
 // Watchers
-watch(imeiList, () => {
-  // Khi IMEI list thay đổi, trigger re-render để cập nhật số IMEI
-  console.log("🔍 IMEI list đã thay đổi, số lượng:", imeiList.value.length);
-}, { deep: true });
+watch(imeiList, () => {}, { deep: true });
 
 // Methods
 function closeModal() {
   emit("close");
 }
 
+// hàm chức năng tìm cho 2 o input
 async function performSearch() {
   const sku = searchSKU.value.trim();
   const imei = searchIMEI.value.trim();
+
+  // XÓA LỖI CŨ KHI BẮT ĐẦU TÌM KIẾM MỚI
+  errorMessage.value = "";
 
   if (sku.length === 0 && imei.length === 0) {
     searchResults.value = [];
@@ -215,7 +262,7 @@ async function performSearch() {
   isLoading.value = true;
 
   try {
-    // ✅ LOGIC MỚI: Xử lý theo yêu cầu
+    // LOGIC MỚI: Xử lý theo yêu cầu
     if (sku.length > 0 && imei.length > 0) {
       // Cả 2 ô có dữ liệu → Tìm kết hợp
       await handleSearchCombined();
@@ -231,80 +278,24 @@ async function performSearch() {
   }
 }
 
+// hàm tìm cho ma sku chi cho nhhập masku
 async function handleSearchSKU() {
   const sku = searchSKU.value.trim();
-
-  console.log("🔍 Frontend: handleSearchSKU được gọi với SKU:", sku);
-
   if (sku.length === 0) {
-    console.log("🔍 Frontend: SKU rỗng, xóa kết quả");
     searchResults.value = [];
     return;
   }
 
-  // ✅ SỬA: Chỉ tìm theo SKU, không kiểm tra IMEI
-  console.log("🔍 Frontend: Tìm kiếm theo SKU:", sku);
-
-  // Kiểm tra cache trước
-  const cacheKey = `sku_${sku}`;
-  if (productCache.value.has(cacheKey)) {
-    const cachedData = productCache.value.get(cacheKey);
-    searchResults.value = cachedData;
-    if (cachedData.length === 0) {
-      showNotificationMessage("❌ Không tìm thấy sản phẩm với mã SKU: " + sku, "warning");
-    }
-    return;
-  }
-
   try {
-    // ✅ YÊU CẦU: Tìm kiếm sản phẩm CHỈ theo SKU (không tìm IMEI)
-    console.log("🔍 Frontend: Gọi API searchProductBySKUOnly với SKU:", sku);
-    
-    // ✅ DEBUG: Thử API cũ trước để test
-    console.log("🔍 Frontend: Thử API cũ searchProductBySKU trước...");
-    const oldData = await searchProductBySKU(sku);
-    console.log("🔍 Frontend: Response từ API cũ:", oldData);
-    
-    // ✅ DEBUG: Kiểm tra cấu trúc dữ liệu từ API cũ
-    if (oldData && oldData.length > 0) {
-      console.log("🔍 Frontend: Cấu trúc sản phẩm từ API cũ:", {
-        tenSanPham: oldData[0].tenSanPham,
-        tenPhuKien: oldData[0].tenPhuKien,
-        maSKU: oldData[0].maSKU,
-        maSKUPhuKien: oldData[0].maSKUPhuKien,
-        gia: oldData[0].gia,
-        giaPhuKien: oldData[0].giaPhuKien,
-        thuocTinh: oldData[0].thuocTinh,
-        thuocTinhPhuKien: oldData[0].thuocTinhPhuKien,
-        keys: Object.keys(oldData[0])
-      });
-    }
-    
+    // để sau nay dung kết hợp 1 ô tìm theo 2 điều kiên (ten, masku, hay imei)
+    // const data = await searchProductBySKU(sku);
+
+    // hàm chi cho nhập masku
     const data = await searchProductBySKUOnly(sku);
-    console.log("🔍 Frontend: Response từ API searchProductBySKUOnly:", data);
-    
-    // ✅ DEBUG: Kiểm tra cấu trúc dữ liệu từ API mới
-    if (data && data.length > 0) {
-      console.log("🔍 Frontend: Cấu trúc sản phẩm từ API mới:", {
-        tenSanPham: data[0].tenSanPham,
-        tenPhuKien: data[0].tenPhuKien,
-        maSKU: data[0].maSKU,
-        maSKUPhuKien: data[0].maSKUPhuKien,
-        gia: data[0].gia,
-        giaPhuKien: data[0].giaPhuKien,
-        thuocTinh: data[0].thuocTinh,
-        thuocTinhPhuKien: data[0].thuocTinhPhuKien,
-        keys: Object.keys(data[0])
-      });
-    }
 
     if (data && data.length > 0) {
       searchResults.value = data;
-      console.log("✅ Frontend: Đã tìm thấy", data.length, "sản phẩm");
-      showNotificationMessage("✅ Tìm thấy " + data.length + " sản phẩm với mã SKU: " + sku, "success");
-      
-      // Cache kết quả
-      productCache.value.set(cacheKey, data);
+      //  Đã xóa caching logic theo yêu cầu
 
       // Tự động mở row đầu tiên và load toàn bộ IMEI
       await nextTick();
@@ -312,30 +303,26 @@ async function handleSearchSKU() {
       if (firstProduct) {
         const sku = firstProduct.maSKU || firstProduct.maSKUPhuKien;
         if (sku) {
-          console.log("🔍 Frontend: Tự động mở IMEI cho SKU:", sku);
           await toggleIMEI(sku);
         }
       }
     } else {
+      // SKU không tìm thấy
       searchResults.value = [];
-      showNotificationMessage("❌ Không tìm thấy sản phẩm với mã SKU: " + sku, "warning");
-      console.log("❌ Frontend: Không tìm thấy sản phẩm với SKU:", sku);
+      //  HIỂN THỊ LỖI TRÊN BẢNG
+      errorMessage.value = `Không tìm thấy sản phẩm với mã SKU: ${sku}`;
     }
   } catch (err) {
-    console.error("❌ Frontend: Lỗi khi tìm kiếm SKU:", err);
     searchResults.value = [];
-    showNotificationMessage("❌ Lỗi khi tìm kiếm sản phẩm với mã SKU: " + sku, "error");
-    console.error(
-      "❌ Frontend: Error data:",
-      err.response ? err.response.data : "no data"
-    );
-    console.error("❌ Frontend: Full error object:", err);
+    //  XỬ LÝ LỖI TỪ JAVA BACKEND
+    let errorMsg = `Lỗi khi tìm kiếm SKU: ${sku}`;
+
     if (err.response && err.response.data) {
-      console.error(
-        "❌ Frontend: Error details:",
-        JSON.stringify(err.response.data, null, 2)
-      );
+      // LẤY THÔNG BÁO LỖI TỪ JAVA BACKEND
+      errorMsg = err.response.data;
     }
+    // HIỂN THỊ LỖI TRÊN BẢNG
+    errorMessage.value = errorMsg;
     searchResults.value = [];
   } finally {
     isLoading.value = false;
@@ -345,48 +332,42 @@ async function handleSearchSKU() {
 async function handleSearchIMEI() {
   const imei = searchIMEI.value.trim();
 
+  errorMessage.value = "";
+
   if (imei.length === 0) {
     searchResults.value = [];
     return;
   }
 
-  console.log("🔍 Frontend: handleSearchIMEI được gọi với IMEI:", imei);
-
   try {
     // ✅ YÊU CẦU: Tìm kiếm IMEI chính xác 100%
     const data = await searchProductByIMEI(imei);
 
-    console.log("🔍 Frontend: Tìm kiếm IMEI response:", data);
-    
     if (data) {
-      // ✅ YÊU CẦU: Chỉ hiển thị đúng 1 sản phẩm
-      console.log("🔍 Frontend: Dữ liệu từ backend:", data);
-      console.log("🔍 Frontend: maSKU:", data.maSKU, "maSKUPhuKien:", data.maSKUPhuKien);
-      console.log("🔍 Frontend: tenSanPham:", data.tenSanPham, "tenPhuKien:", data.tenPhuKien);
-      console.log("🔍 Frontend: gia:", data.gia, "sanPham.gia:", data.sanPham?.gia, "sanPham object:", data.sanPham);
-      
+      //  YÊU CẦU: Chỉ hiển thị đúng 1 sản phẩm
       searchResults.value = [data]; // Wrap trong array để hiển thị
-      console.log("✅ Frontend: Tìm thấy chính xác 1 sản phẩm với IMEI:", imei);
-      showNotificationMessage(`✅ Tìm thấy chính xác sản phẩm với IMEI: ${imei}`, "success");
 
       // Tự động mở row và load IMEI
       await nextTick();
       const sku = data.maSKU || data.maSKUPhuKien;
       if (sku) {
-        console.log("🔍 Frontend: Tự động mở IMEI cho SKU:", sku);
-        console.log("🔍 Frontend: Loại sản phẩm:", data.maSKU ? "sản phẩm chính" : "phụ kiện");
         await toggleIMEI(sku);
       }
     } else {
       // IMEI không tìm thấy
       searchResults.value = [];
-      console.log("❌ Frontend: Không tìm thấy IMEI:", imei);
-      showNotificationMessage("❌ Không tìm thấy sản phẩm với IMEI: " + imei, "warning");
     }
   } catch (err) {
-    console.error("❌ Lỗi khi tìm kiếm IMEI:", err);
     searchResults.value = [];
-    showNotificationMessage("❌ Lỗi khi tìm kiếm IMEI: " + imei, "error");
+    // NHẬN LỖI TỪ JAVA BACKEND VÀ HIỂN THỊ TRÊN BẢNG
+    let errorMsg = `Lỗi khi tìm kiếm IMEI: ${imei}`;
+
+    if (err.response && err.response.data) {
+      //  LẤY THÔNG BÁO LỖI TỪ JAVA BACKEND
+      errorMsg = err.response.data;
+    }
+    //  HIỂN THỊ LỖI TRÊN BẢNG
+    errorMessage.value = errorMsg;
   }
 }
 
@@ -398,60 +379,48 @@ async function handleSearchCombined() {
   const sku = searchSKU.value.trim();
   const imei = searchIMEI.value.trim();
 
-  console.log("🔍 Frontend: handleSearchCombined được gọi với SKU:", sku, "IMEI:", imei);
-
   if (sku.length === 0 || imei.length === 0) {
-    console.log("🔍 Frontend: SKU hoặc IMEI rỗng, không tìm kiếm kết hợp");
     return;
   }
 
   try {
-    // ✅ YÊU CẦU: Tìm kiếm kết hợp SKU đúng + IMEI gần đúng
-    // Sử dụng API tìm kiếm riêng biệt để kiểm soát logic tốt hơn
-    const res = await axios.get(
-      "http://localhost:8081/api/banhangtaiquay/sanpham/search-combined",
-      {
-        params: {
-          sku: sku,        // SKU phải đúng 100%
-          imei: imei,      // IMEI bắt đầu với chuỗi tìm kiếm (không phải LIKE)
-        },
-      }
-    );
+    //  YÊU CẦU: Tìm kiếm kết hợp SKU đúng + IMEI gần đúng
+    const data = await searchProductCombined(sku, imei);
 
-    if (res.data && res.data.length > 0) {
-      searchResults.value = res.data;
-      showNotificationMessage(
-        `✅ Tìm thấy ${res.data.length} sản phẩm kết hợp SKU: ${sku} + IMEI gần đúng: ${imei}`,
-        "success"
-      );
+    if (data && data.length > 0) {
+      searchResults.value = data;
 
       // Tự động mở row đầu tiên và load IMEI
       await nextTick();
-      const firstProduct = res.data[0];
+      const firstProduct = data[0];
       if (firstProduct) {
         const sku = firstProduct.maSKU || firstProduct.maSKUPhuKien;
         if (sku) {
-          console.log("🔍 Frontend: Tự động mở IMEI cho SKU:", sku);
           await toggleIMEI(sku);
         }
       }
     } else {
+      // Không tìm thấy sản phẩm kết hợp
       searchResults.value = [];
-      showNotificationMessage(
-        `❌ Không tìm thấy sản phẩm kết hợp với SKU: ${sku} và IMEI gần đúng: ${imei}`,
-        "warning"
-      );
+
+      // ✅HIỂN THỊ LỖI TRÊN BẢNG
+      errorMessage.value = `Không tìm thấy sản phẩm kết hợp với SKU: ${sku} và IMEI: ${imei}`;
     }
   } catch (err) {
-    console.error("❌ Lỗi khi tìm kiếm kết hợp:", err);
     searchResults.value = [];
-    showNotificationMessage(
-      "❌ Lỗi khi tìm kiếm kết hợp. Vui lòng thử lại.",
-      "error"
-    );
+
+    //  XỬ LÝ LỖI TỪ JAVA BACKEND
+    let errorMsg = `Lỗi khi tìm kiếm kết hợp SKU: ${sku} và IMEI: ${imei}`;
+
+    if (err.response && err.response.data) {
+      //  LẤY THÔNG BÁO LỖI TỪ JAVA BACKEND
+      errorMsg = err.response.data;
+    }
+
+    // ✅ HIỂN THỊ LỖI TRÊN BẢNG
+    errorMessage.value = errorMsg;
   }
 }
-
 
 async function toggleIMEI(maSKU) {
   if (expandedSKU.value === maSKU) {
@@ -474,25 +443,18 @@ async function loadIMEIList(maSKU) {
   imeiList.value = [];
 
   try {
-    console.log("🔍 Frontend: loadIMEIList được gọi với SKU:", maSKU);
-    console.log("🔍 Frontend: Trạng thái trước khi load - loadingIMEI:", loadingIMEI.value, "imeiList.length:", imeiList.value.length);
-    
     // ✅ KIỂM TRA: Có filter IMEI không?
     const imeiFilter = searchIMEI.value.trim();
     const hasImeiFilter = imeiFilter.length > 0;
-    
+
     if (hasImeiFilter) {
-      console.log("🔍 Frontend: Có filter IMEI - Load IMEI với filter:", imeiFilter);
-      // ✅ YÊU CẦU: Load IMEI với filter khi có filter IMEI (chỉ IMEI hoặc kết hợp)
+      // YÊU CẦU: Load IMEI với filter khi có filter IMEI (chỉ IMEI hoặc kết hợp)
       await loadIMEIWithFilter(maSKU, imeiFilter);
     } else {
-      console.log("🔍 Frontend: Không có filter IMEI - Load toàn bộ IMEI");
-      // ✅ YÊU CẦU: Load toàn bộ IMEI khi chỉ tìm SKU
+      //  YÊU CẦU: Load toàn bộ IMEI khi chỉ tìm SKU
       await loadAllIMEI(maSKU);
     }
-    
   } catch (err) {
-    console.error("❌ Lỗi khi tải IMEI:", err);
     imeiList.value = [];
   } finally {
     loadingIMEI.value = false;
@@ -504,62 +466,45 @@ async function loadIMEIList(maSKU) {
  */
 async function loadAllIMEI(maSKU) {
   // Thử load IMEI cho cả sản phẩm chính và phụ kiện
-  console.log("🔍 Frontend: Thử load IMEI cho SKU:", maSKU);
-    
+
   // Thử load IMEI cho sản phẩm chính trước
   try {
-    console.log("🔍 Frontend: Thử load IMEI cho sản phẩm chính:", maSKU);
     const data = await loadIMEIForProduct(maSKU);
-    
+
     if (data && data.length > 0) {
       imeiList.value = data;
-      console.log("✅ Frontend: Tìm thấy IMEI cho sản phẩm chính:", data.length, "IMEI");
       return;
     }
-  } catch (err) {
-    console.log("🔍 Frontend: Lỗi API sản phẩm chính:", err.message);
-  }
-  
+  } catch (err) {}
+
   // Nếu không tìm thấy cho sản phẩm chính, thử phụ kiện
   try {
-    console.log("🔍 Frontend: Thử load IMEI cho phụ kiện:", maSKU);
     const data = await loadIMEIForAccessory(maSKU);
-    
+
     if (data && data.length > 0) {
       imeiList.value = data;
-      console.log("✅ Frontend: Tìm thấy IMEI cho phụ kiện:", data.length, "IMEI");
       return;
     }
-  } catch (err) {
-    console.log("🔍 Frontend: Lỗi API phụ kiện:", err.message);
-  }
-  
+  } catch (err) {}
+
   // Nếu không tìm thấy IMEI nào
   imeiList.value = [];
-  console.log("❌ Frontend: Không tìm thấy IMEI cho SKU:", maSKU);
 }
 
 /**
- * Load IMEI với filter (tìm kiếm kết hợp)
+ * Load IMEI với filter (tìm kiếm kết hợp load danh sánh tho điều kiênk)
  */
 async function loadIMEIWithFilter(maSKU, imeiFilter) {
   try {
-    console.log("🔍 Frontend: Load IMEI với filter cho SKU:", maSKU, "IMEI filter:", imeiFilter);
-    
-    // ✅ YÊU CẦU: Sử dụng API có filter IMEI
-    const res = await axios.get(`http://localhost:8081/api/banhangtaiquay/sanpham/${maSKU}/imei/search`, {
-      params: { imei: imeiFilter }
-    });
-    
-    if (res.data && res.data.length > 0) {
-      imeiList.value = res.data;
-      console.log("✅ Frontend: Tìm thấy IMEI với filter:", res.data.length, "IMEI");
+    //  Sử dụng API từ api.js
+    const data = await apiLoadIMEIWithFilter(maSKU, imeiFilter);
+
+    if (data && data.length > 0) {
+      imeiList.value = data;
     } else {
-      console.log("❌ Frontend: Không tìm thấy IMEI với filter");
       imeiList.value = [];
     }
   } catch (error) {
-    console.error("❌ Frontend: Lỗi khi load IMEI với filter:", error);
     // Fallback: Load toàn bộ IMEI
     await loadAllIMEI(maSKU);
   }
@@ -571,18 +516,11 @@ async function loadIMEIWithFilter(maSKU, imeiFilter) {
  * @returns {Promise<void>}
  */
 async function chonSanPham(sp) {
-  console.log("🔍 Frontend: chonSanPham được gọi cho:", sp.tenSanPham || sp.tenPhuKien);
-  
   // Đảm bảo IMEI list đã được load trước khi chọn
   const sku = sp.maSKU || sp.maSKUPhuKien;
-  console.log("🔍 Frontend: expandedSKU:", expandedSKU.value, "sku:", sku, "imeiList.length:", imeiList.value.length);
-  
+
   // Luôn load IMEI list trước khi chọn sản phẩm
-  console.log("🔍 Frontend: Luôn load IMEI list trước khi chọn sản phẩm");
   await loadIMEIList(sku);
-  console.log("🔍 Frontend: Sau khi load IMEI, imeiList.length:", imeiList.value.length);
-  console.log("🔍 Frontend: imeiList.value chi tiết:", imeiList.value);
-  
   // Nếu không có IMEI được chọn, sử dụng tất cả IMEI có sẵn
   let imeiListToUse = selectedIMEIs.value;
   let soLuongToUse = selectedIMEIs.value.length;
@@ -593,28 +531,17 @@ async function chonSanPham(sp) {
       // Sử dụng toàn bộ object IMEI, không chỉ chuỗi
       imeiListToUse = imeiList.value;
       soLuongToUse = imeiList.value.length;
-      console.log(
-        "📱 Sử dụng tất cả IMEI có sẵn:",
-        imeiListToUse.length,
-        "IMEI objects"
-      );
     } else {
       // Nếu không có IMEI nào, thêm sản phẩm với số lượng 1
       imeiListToUse = [];
       soLuongToUse = 1;
-      console.log("📱 Không có IMEI, thêm sản phẩm với số lượng 1");
     }
   } else {
     // Nếu có IMEI được chọn cụ thể, tìm object IMEI tương ứng
-    imeiListToUse = imeiList.value.filter(imeiObj => 
+    imeiListToUse = imeiList.value.filter((imeiObj) =>
       selectedIMEIs.value.includes(imeiObj.imei)
     );
     soLuongToUse = imeiListToUse.length;
-    console.log(
-      "📱 Sử dụng IMEI đã chọn:",
-      imeiListToUse.length,
-      "IMEI objects"
-    );
   }
 
   // Gửi kèm danh sách IMEI đã chọn
@@ -623,36 +550,15 @@ async function chonSanPham(sp) {
     soLuong: soLuongToUse,
     imeiList: imeiListToUse,
   };
-  
-  console.log("🔍 Frontend: dataToEmit trước khi emit:", {
-    sanPham: sp.tenSanPham || sp.tenPhuKien,
-    soLuong: soLuongToUse,
-    imeiListLength: imeiListToUse.length,
-    imeiList: imeiListToUse
-  });
 
   emit("chonSanPham", dataToEmit);
   selectedIMEIs.value = [];
-  console.log(
-    "✅ Đã chọn:",
-    sp.tenSanPham || sp.tenPhuKien || 'N/A',
-    "x",
-    soLuongToUse,
-    "| IMEIs:",
-    imeiListToUse
-  );
-  console.log("🔍 Frontend: IMEI list chi tiết:", imeiListToUse.map(imei => ({
-    imei: typeof imei === 'string' ? imei : imei.imei,
-    trangThai: typeof imei === 'string' ? 'N/A' : imei.trangThai
-  })));
 
   // Clear search fields để có thể tìm sản phẩm khác
   searchSKU.value = "";
   searchIMEI.value = "";
   searchResults.value = [];
   expandedSKU.value = null;
-
-  console.log("🔄 Đã clear search fields, sẵn sàng tìm sản phẩm khác");
 }
 
 function boChonTatCa() {
@@ -685,11 +591,6 @@ function getStatusText(status) {
   }
 }
 
-function formatDate(dateString) {
-  if (!dateString) return "N/A";
-  return new Date(dateString).toLocaleDateString("vi-VN");
-}
-
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -697,13 +598,12 @@ function formatCurrency(value) {
   }).format(value);
 }
 
-function showNotificationMessage(message, type) {
-  console.log(`${type === "success" ? "✅" : "❌"} ${message}`);
-}
-
 function getImeiCount(sp) {
   // Nếu đang mở IMEI list cho sản phẩm này, hiển thị số IMEI thực tế
-  if (expandedSKU.value === (sp.maSKU || sp.maSKUPhuKien) && imeiList.value.length > 0) {
+  if (
+    expandedSKU.value === (sp.maSKU || sp.maSKUPhuKien) &&
+    imeiList.value.length > 0
+  ) {
     return imeiList.value.length;
   }
   // Nếu không, hiển thị số lượng từ dữ liệu sản phẩm
@@ -874,7 +774,6 @@ th {
   font-size: 12px;
   font-weight: 600;
 }
-
 
 .imei-row {
   background: #f8f9fa;
@@ -1138,5 +1037,73 @@ th {
 .btn-confirm:hover {
   background: #218838;
   transform: translateY(-1px);
+}
+
+/* ✅ CSS ĐẸP CHO THÔNG BÁO TÌM KIẾM */
+.search-prompt {
+  text-align: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  margin: 20px;
+  border: 2px dashed #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.search-prompt:hover {
+  border-color: #007bff;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
+}
+
+.search-prompt-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.7;
+  animation: pulse 2s infinite;
+}
+
+.search-prompt-text {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #495057;
+  letter-spacing: 0.5px;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* ✅ CSS CHO THÔNG BÁO LỖI */
+.error-prompt {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%) !important;
+  border: 2px dashed #dc3545 !important;
+  color: #721c24;
+}
+
+.error-prompt:hover {
+  border-color: #dc3545 !important;
+  background: linear-gradient(135deg, #f5c6cb 0%, #f1b0b7 100%) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+}
+
+.error-prompt .search-prompt-icon {
+  color: #dc3545;
+}
+
+.error-prompt .search-prompt-text {
+  color: #721c24;
+  font-weight: 600;
 }
 </style>

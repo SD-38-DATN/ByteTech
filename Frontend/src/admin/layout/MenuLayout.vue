@@ -15,6 +15,7 @@
 
       <nav class="nav-menu">
         <ul>
+
           <!-- Dashboard -->
           <li>
             <RouterLink to="/admin/don-hang" class="nav-link">
@@ -27,12 +28,12 @@
             <li class="has-submenu">
             <a @click="toggleSubmenu('banhang')" class="nav-link">
                <i class="fas fa-cash-register"></i>
-              <span>Bán Hàng</span>
+              <span>Bán Hàng Tại Quầy</span>
               <i class="fas fa-chevron-down arrow" :class="{'rotated': openSubmenus.banhang}"></i>
             </a>
             <ul class="submenu" :class="{'open': openSubmenus.banhang}">
-              <li><RouterLink to="/admin/ban-hang">Bán hàng</RouterLink></li>
-               <li><RouterLink to="/admin/xu-ly-don-luu">Đơn Đã Lưu</RouterLink></li> 
+              <li><RouterLink to="/admin/ban-hang-tai-quay/ban-hang">Bán Hàng</RouterLink></li>
+               <li><RouterLink to="/admin/ban-hang-tai-quay/xu-ly-don-luu">Đơn Đã Lưu</RouterLink></li> 
             </ul>
           </li>
          
@@ -67,12 +68,22 @@
           </ul>
         </li>
 
-          <!-- Thống kê doanh thu -->
+           <!-- Thống kê -->
+            <li class="has-submenu">
+            <a @click="toggleSubmenu('thongke')" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+              <span>Thông Kê</span>
+              <i class="fas fa-chevron-down arrow" :class="{'rotated': openSubmenus.thongke}"></i>
+            </a>
+            <ul class="submenu" :class="{'open': openSubmenus.thongke}">
+              <li><RouterLink to="/admin/thong-ke/tong-quan">Tổng Quan</RouterLink></li>
+               <li><RouterLink to="/admin/thong-ke/doanh-thu">Doanh Thu</RouterLink></li>
+               <li><RouterLink to="/admin/thong-ke/don-hang">Đơn Hàng</RouterLink></li>
+               <li><RouterLink to="/admin/thong-ke/san-pham">Sản Phẩm</RouterLink></li>
+            </ul>
+          </li>
           <li>
-            <RouterLink to="/admin/thongke" class="nav-link">
-              <i class="fas fa-chart-bar"></i>
-              <span>Thống kê doanh thu</span>
-            </RouterLink>
+           
           </li>
 
           <!-- Khuyến mãi -->
@@ -139,7 +150,8 @@ import { RouterLink } from 'vue-router'
 const openSubmenus = reactive({
   sanpham: false,
   phukien: false,
-  banhang: false
+  banhang: false,
+  thongke: false
 })
 
 // Toggle submenu

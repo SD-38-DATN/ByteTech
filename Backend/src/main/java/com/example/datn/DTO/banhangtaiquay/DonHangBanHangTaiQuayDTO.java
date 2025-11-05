@@ -19,6 +19,7 @@ public class DonHangBanHangTaiQuayDTO {
     private String tenNhanVien; // Tên nhân viên
     private String username; // Username nhân viên
     private LocalDateTime ngayDat;
+    private String tenNguoiNhan;
     private Integer trangThai; // 1 = Chờ thanh toán, 2 = Đã thanh toán
     private BigDecimal tongTien;
     private String diaChiGiaoHang;

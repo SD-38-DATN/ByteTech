@@ -1,10 +1,8 @@
 package com.example.datn.Controller;
 
 
-
 import com.example.datn.Config.JwtUtil;
 import com.example.datn.DTO.TrangMuaHang.UserDTO;
-
 import com.example.datn.Service.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +72,7 @@ public class UserController {
             String token = authHeader.replace("Bearer ", "");
             Claims claims = jwtUtil.extractAllClaims(token);
 
+            System.out.println("👉 Claims trong token: " + claims);
             String username = claims.getSubject();
             String role = claims.get("role", String.class);
 

@@ -130,7 +130,6 @@ const diaChi = computed({
 
 // Watch props để cập nhật khi chuyển đơn hàng
 watch(() => props.customerInfo, (newCustomerInfo) => {
-  console.log("👤 Props customerInfo thay đổi:", newCustomerInfo);
   
   if (newCustomerInfo && newCustomerInfo.soDienThoai) {
     phoneNumber.value = newCustomerInfo.soDienThoai;
@@ -140,7 +139,6 @@ watch(() => props.customerInfo, (newCustomerInfo) => {
       soDienThoai: newCustomerInfo.soDienThoai || "",
       diaChi: newCustomerInfo.diaChi || ""
     };
-    console.log("👤 Đã load thông tin khách hàng từ props:", newCustomer.value);
   } else {
     // Reset nếu không có thông tin khách hàng
     phoneNumber.value = "";
@@ -150,7 +148,6 @@ watch(() => props.customerInfo, (newCustomerInfo) => {
       soDienThoai: "",
       diaChi: ""
     };
-    console.log("👤 Reset thông tin khách hàng vì props trống");
   }
 }, { immediate: true, deep: true });
 
@@ -229,7 +226,6 @@ function emitCustomerUpdate() {
     customerInfo: customerInfo.value
   };
   
-  console.log("👤 Emit customer update:", customerData);
   emit("customerUpdated", customerData);
 }
 
